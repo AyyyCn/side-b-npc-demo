@@ -1,0 +1,671 @@
+<style>
+  * {
+    box-sizing: border-box;
+  }
+  :root {
+    --paper: #f2f0e8;
+    --ink: #222a26;
+    --muted: #5e655c;
+    --rule: #c5c7bb;
+    --east: #80cbb3;
+    --west: #e3b082;
+  }
+  html,
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: Inter, "Helvetica Neue", Arial, sans-serif;
+    margin: 0;
+  }
+  body {
+    min-height: 100vh;
+  }
+  main {
+    max-width: 2010px;
+    margin: auto;
+    padding: clamp(18px, 2.3vw, 45px) clamp(18px, 3.6vw, 72px)
+      clamp(26px, 2.5vw, 52px);
+  }
+  .mast,
+  .brand,
+  .tools,
+  .transport,
+  .pairhead,
+  .issue,
+  .witness-heading,
+  .controls,
+  .summary {
+    display: flex;
+    align-items: center;
+  }
+  .mast {
+    justify-content: space-between;
+    border-bottom: 1px solid var(--rule);
+    padding-bottom: clamp(10px, 1.15vw, 24px);
+  }
+  .brand {
+    gap: 16px;
+    font-size: clamp(13px, 1vw, 20px);
+    color: var(--muted);
+  }
+  .brand b {
+    font-size: clamp(22px, 1.8vw, 35px);
+    letter-spacing: -0.065em;
+    color: var(--ink);
+  }
+  .brand span {
+    border-left: 1px solid #a8ad9f;
+    padding-left: 16px;
+  }
+  .tools {
+    gap: 18px;
+    font-size: 13px;
+  }
+  .tools a {
+    color: var(--muted);
+    text-underline-offset: 3px;
+  }
+  .seed-label,
+  .time,
+  .run-no,
+  .quantity,
+  .clock,
+  .eyebrow {
+    font-variant-numeric: tabular-nums;
+  }
+  .seed-label {
+    font-size: clamp(12px, 0.94vw, 18px);
+    font-weight: 540;
+    color: var(--muted);
+  }
+  .headline {
+    padding: clamp(15px, 2vw, 39px) 0 clamp(15px, 1.7vw, 33px);
+  }
+  h1 {
+    margin: 0;
+    font-size: clamp(34px, 3.75vw, 76px);
+    font-weight: 570;
+    letter-spacing: -0.057em;
+    line-height: 1.03;
+  }
+  .headline p {
+    font-size: clamp(15px, 1.31vw, 26px);
+    color: var(--muted);
+    letter-spacing: -0.018em;
+    line-height: 1.35;
+    margin: 0.43em 0 0;
+  }
+  #arenas {
+    position: relative;
+    width: 100%;
+    height: clamp(280px, 26vw, 525px);
+    overflow: hidden;
+    border: 1px solid #323c35;
+    background: #26322d;
+  }
+  canvas {
+    position: absolute;
+    inset: 0;
+    height: 100%;
+    width: 100%;
+    display: block;
+    cursor: crosshair;
+  }
+  .pane {
+    position: absolute;
+    top: 0;
+    width: 50%;
+    height: 100%;
+    padding: clamp(11px, 1.3vw, 26px);
+    pointer-events: none;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    background: linear-gradient(
+      #15231eb0,
+      transparent 27%,
+      transparent 77%,
+      #15211ca6
+    );
+  }
+  .pane.a {
+    left: 0;
+    border-right: 1px solid #82938870;
+  }
+  .pane.b {
+    left: 50%;
+  }
+  .pairhead {
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  .run-no {
+    font-size: clamp(10px, 0.82vw, 16px);
+    color: #cad7cc;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+  }
+  .pairhead h2 {
+    margin: 0.17em 0 0;
+    font-size: clamp(20px, 1.78vw, 36px);
+    font-weight: 500;
+    letter-spacing: -0.045em;
+    color: #f8f4e8;
+  }
+  .quantity {
+    display: flex;
+    gap: 0.28em;
+    align-items: baseline;
+    white-space: nowrap;
+    color: var(--east);
+    font-size: clamp(11px, 0.87vw, 18px);
+  }
+  .quantity b {
+    font-size: clamp(24px, 2.35vw, 48px);
+    font-weight: 550;
+    letter-spacing: -0.065em;
+    color: #d9f1df;
+    font-variant-numeric: tabular-nums;
+  }
+  .rooms {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    color: #e7e7d8;
+    letter-spacing: 0.035em;
+    font-size: clamp(12px, 0.93vw, 19px);
+  }
+  .rooms span::before {
+    content: "";
+    display: inline-block;
+    width: 0.52em;
+    height: 0.52em;
+    border-radius: 50%;
+    background: var(--west);
+    margin-right: 0.53em;
+    vertical-align: 0.03em;
+  }
+  .rooms span + span::before {
+    background: var(--east);
+  }
+  #loading {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    text-align: center;
+    background: #26322d;
+    color: #f4f0e1;
+    font-size: 18px;
+    z-index: 2;
+    padding: 20px;
+  }
+  button,
+  select,
+  input {
+    font: inherit;
+  }
+  button,
+  select {
+    border: 1px solid #b7bdb0;
+    background: #f4f3ec;
+    color: var(--ink);
+    border-radius: 5px;
+    padding: 7px 10px;
+    font-size: 13px;
+    cursor: pointer;
+  }
+  button:hover,
+  select:hover {
+    border-color: #717e6b;
+  }
+  button:focus-visible,
+  select:focus-visible,
+  input:focus-visible,
+  summary:focus-visible,
+  a:focus-visible {
+    outline: 2px solid #367b6a;
+    outline-offset: 2px;
+  }
+  button:disabled,
+  select:disabled {
+    opacity: 0.5;
+    cursor: wait;
+  }
+  .transport {
+    gap: 14px;
+    min-height: 56px;
+    border-bottom: 1px solid var(--rule);
+    padding: 10px 0;
+  }
+  .primary {
+    background: #243d33;
+    border-color: #243d33;
+    color: #f2f5e8;
+    font-weight: 550;
+    min-width: 96px;
+  }
+  .primary:hover {
+    background: #345044;
+  }
+  .time {
+    font-size: 14px;
+    white-space: nowrap;
+    font-weight: 560;
+  }
+  .scrub {
+    flex: 1;
+    min-width: 35px;
+    accent-color: #356d58;
+    width: 100%;
+  }
+  .controls {
+    gap: 12px;
+    flex-wrap: wrap;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--rule);
+  }
+  label {
+    font-size: 13px;
+    font-weight: 560;
+  }
+  select {
+    margin-left: 5px;
+  }
+  .controls .fine {
+    font-weight: 400;
+    font-size: 13px;
+    color: var(--muted);
+    margin-left: auto;
+  }
+  .witness-heading {
+    justify-content: space-between;
+    margin: clamp(12px, 1.6vw, 30px) 0 10px;
+    gap: 12px;
+  }
+  .witness-heading h2 {
+    margin: 0;
+    font-size: clamp(17px, 1.5vw, 30px);
+    letter-spacing: -0.035em;
+    font-weight: 550;
+  }
+  .testimony {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 3%;
+  }
+  .answer {
+    border-left: 2px solid #718c77;
+    padding-left: clamp(11px, 1vw, 20px);
+  }
+  .answer .eyebrow {
+    color: var(--muted);
+    font-size: clamp(10px, 0.78vw, 15px);
+    text-transform: uppercase;
+    font-weight: 590;
+    letter-spacing: 0.075em;
+  }
+  blockquote {
+    margin: 0.24em 0 0;
+    font-size: clamp(17px, 1.5vw, 31px);
+    letter-spacing: -0.032em;
+    line-height: 1.17;
+    font-weight: 500;
+  }
+  details {
+    margin-top: 14px;
+    color: var(--muted);
+    font-size: 14px;
+  }
+  summary {
+    cursor: pointer;
+    max-width: max-content;
+    text-underline-offset: 3px;
+  }
+  .trail {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 3%;
+    margin: 12px 0 0;
+  }
+  .trail ol {
+    padding-left: 22px;
+    margin: 0;
+    line-height: 1.5;
+  }
+  [hidden] {
+    display: none !important;
+  }
+  .pitch .interactive {
+    display: none !important;
+  }
+  .pitch .witness-heading {
+    margin: clamp(16px, 1.9vw, 36px) 0 12px;
+  }
+  .pitch .transport {
+    border-bottom: none;
+    min-height: 48px;
+    gap: 17px;
+  }
+  .pitch progress {
+    width: 100%;
+    flex: 1;
+    height: 4px;
+    appearance: none;
+    border: 0;
+    background: #c3c9bd;
+  }
+  .pitch progress::-webkit-progress-bar {
+    background: #c3c9bd;
+  }
+  .pitch progress::-webkit-progress-value {
+    background: #497e65;
+  }
+  .pitch .headline {
+    padding-top: clamp(18px, 2.7vw, 52px);
+    padding-bottom: clamp(18px, 2.2vw, 43px);
+  }
+  #clock-label {
+    font-size: clamp(12px, 1vw, 19px);
+    color: var(--muted);
+  }
+  .pitch .time {
+    font-size: clamp(15px, 1.2vw, 24px);
+  }
+  @media (max-width: 900px) {
+    .controls .fine {
+      display: none;
+    }
+    .tools {
+      gap: 10px;
+    }
+    .transport {
+      gap: 7px;
+    }
+    .witness-heading {
+      gap: 8px;
+    }
+  }
+  @media (max-width: 680px) {
+    main {
+      padding: 14px;
+    }
+    .brand {
+      gap: 8px;
+    }
+    .brand span {
+      padding-left: 8px;
+    }
+    .tools a {
+      display: none;
+    }
+    .tools {
+      font-size: 11px;
+    }
+    .headline {
+      padding: 16px 0;
+    }
+    #arenas {
+      height: clamp(330px, 91vw, 540px);
+    }
+    .pane {
+      width: 100%;
+      height: 50%;
+      padding: 8px 12px;
+    }
+    .pane.a {
+      border: 0;
+      border-bottom: 1px solid #82938870;
+    }
+    .pane.b {
+      left: 0;
+      top: 50%;
+    }
+    .pairhead h2 {
+      font-size: 18px;
+    }
+    .run-no {
+      font-size: 9px;
+    }
+    .quantity b {
+      font-size: 21px;
+    }
+    .rooms {
+      font-size: 10px;
+    }
+    .transport button {
+      font-size: 11px;
+      padding: 6px;
+    }
+    .primary {
+      min-width: 65px;
+    }
+    #checkpoint {
+      display: none;
+    }
+    .controls {
+      gap: 6px;
+    }
+    .controls label,
+    .controls button,
+    .controls select {
+      font-size: 12px;
+    }
+    .controls select {
+      margin: 0;
+      max-width: 165px;
+    }
+    .witness-heading {
+      align-items: baseline;
+      flex-wrap: wrap;
+    }
+    .testimony {
+      gap: 10px;
+    }
+    .answer {
+      padding-left: 8px;
+    }
+    blockquote {
+      font-size: 15px;
+    }
+    details {
+      font-size: 12px;
+    }
+  }
+  .guest-tag {
+    position: absolute;
+    z-index: 1;
+    pointer-events: none;
+    transform: translate(-50%, -100%);
+    background: #f5edcf;
+    color: #243029;
+    border: 1px solid #a9ae8e;
+    border-radius: 3px;
+    padding: 0.12em 0.4em;
+    font-size: clamp(10px, 0.82vw, 17px);
+    font-weight: 650;
+    box-shadow: 0 1px 6px #14221e55;
+    white-space: nowrap;
+  }
+  .guest-tag::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    bottom: -4px;
+    width: 6px;
+    height: 6px;
+    background: #f5edcf;
+    transform: translateX(-50%) rotate(45deg);
+  }
+  .trail button {
+    border: 0;
+    background: transparent;
+    padding: 1px 4px 1px 0;
+    text-decoration: underline;
+    color: #33634e;
+    font-size: inherit;
+  }
+  .slide .transport {
+    display: none;
+  }
+  .slide .method {
+    font-size: clamp(13px, 1.08vw, 22px);
+    color: var(--muted);
+    border-top: 1px solid var(--rule);
+    padding-top: 0.65em;
+    margin: 1.15em 0 0;
+  }
+  .slide .quantity b {
+    font-size: clamp(26px, 3.05vw, 61px);
+  }
+  .slide .witness-heading {
+    margin-top: clamp(16px, 1.8vw, 34px);
+  }
+  .interview {
+    border-top: 1px solid var(--rule);
+    margin-top: 14px;
+    padding-top: 12px;
+  }
+  .interview form {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .interview input {
+    font: inherit;
+    min-width: 190px;
+    border: 1px solid #aeb7a9;
+    border-radius: 4px;
+    padding: 7px 9px;
+    background: #f9f8f1;
+    color: var(--ink);
+  }
+  .interview .trail {
+    line-height: 1.4;
+  }
+  .interview output {
+    display: block;
+  }
+  .interview p {
+    margin: 8px 0;
+  }
+</style>
+<main>
+  <header class="mast">
+    <div class="brand"><b>Side B</b><span>Crowd simulation</span></div>
+    <div class="tools">
+      <span class="seed-label" id="seed-label">40 guests</span
+      ><a class="interactive" href="?room">Listening room</a>
+    </div>
+  </header>
+  <section class="headline">
+    <h1 id="headline">Where does the crowd go?</h1>
+    <p id="caption">
+      The DJ moves from West Hall to East Hall. One guest gets the radio call.
+    </p>
+  </section>
+  <div id="arenas" aria-label="Two synchronized 3D venues">
+    <canvas
+      id="comparison-view"
+      aria-label="Select a guest in either run"
+    ></canvas>
+    <section class="pane a">
+      <div class="pairhead">
+        <div>
+          <div class="run-no">Original run</div>
+          <h2>Uninterrupted</h2>
+        </div>
+        <span class="quantity"><b id="count-a">0</b> in East Hall</span>
+      </div>
+      <div class="rooms"><span>West Hall</span><span>East Hall</span></div>
+    </section>
+    <section class="pane b">
+      <div class="pairhead">
+        <div>
+          <div class="run-no">Second run</div>
+          <h2 id="hold-label">Four-second hold</h2>
+        </div>
+        <span class="quantity"><b id="count-b">0</b> in East Hall</span>
+      </div>
+      <div class="rooms"><span>West Hall</span><span>East Hall</span></div>
+    </section>
+    <span id="tag-a" class="guest-tag" hidden></span
+    ><span id="tag-b" class="guest-tag" hidden></span>
+    <div id="loading" role="status">Opening both halls…</div>
+  </div>
+  <div class="transport">
+    <button id="play" class="primary interactive" disabled>Replay</button
+    ><span id="clock-label" hidden>Simulation time</span
+    ><span class="time" id="clock">0.0 s</span>
+    <input
+      class="scrub interactive"
+      id="seek"
+      aria-label="Simulation time"
+      type="range"
+      min="0"
+      max="400"
+      value="0"
+      step="1"
+      disabled
+    /><progress id="progress" max="400" value="0" hidden></progress>
+    <button class="interactive" id="checkpoint" disabled>Checkpoint</button
+    ><button class="interactive" id="end" disabled>Outcome</button
+    ><button id="start-pitch" class="primary" hidden>Play film</button>
+  </div>
+  <div class="controls interactive">
+    <label
+      >Interrupt
+      <select
+        id="messenger"
+        aria-label="Guest to interrupt"
+        disabled
+      ></select></label
+    ><button id="best" disabled>Largest effect</button
+    ><button id="new" disabled>New crowd</button
+    ><span class="fine" id="rank-note"></span>
+  </div>
+  <section aria-label="Guest memory">
+    <div class="witness-heading">
+      <h2 id="witness-title">Guest memory</h2>
+      <label class="interactive"
+        >Inspect
+        <select id="witness" aria-label="Inspect a guest" disabled></select
+      ></label>
+    </div>
+    <div class="testimony">
+      <div class="answer">
+        <span class="eyebrow">Original run</span>
+        <blockquote id="answer-a">—</blockquote>
+      </div>
+      <div class="answer">
+        <span class="eyebrow">Second run</span>
+        <blockquote id="answer-b">—</blockquote>
+      </div>
+    </div>
+    <details class="interactive" id="evidence">
+      <summary>Trace the evidence</summary>
+      <div class="trail">
+        <ol id="trail-a" aria-label="Original evidence trail"></ol>
+        <ol id="trail-b" aria-label="Second evidence trail"></ol>
+      </div>
+      <div id="interview" class="interview" hidden>
+        <form id="question-form">
+          <label for="question">Question for both runs</label
+          ><input
+            id="question"
+            maxlength="120"
+            placeholder="Who told you?"
+            required
+          /><button>Ask</button>
+        </form>
+        <p id="question-context" role="status"></p>
+        <div class="trail">
+          <output id="response-a"></output><output id="response-b"></output>
+        </div>
+      </div>
+    </details>
+  </section>
+  <p id="method" class="method" hidden></p>
+</main>

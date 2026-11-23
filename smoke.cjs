@@ -27,6 +27,59 @@ async function check() {
       page.evaluate(() => JSON.parse(window.render_game_to_text()));
     const url = process.env.DEMO_URL || "http://127.0.0.1:19447/";
     await page.goto(url);
+    await page.waitForFunction(
+      () =>
+        window.render_game_to_text && JSON.parse(render_game_to_text()).ready,
+    );
+    await page.locator("#loading").waitFor({ state: "hidden" });
+    const first = await state();
+    assert.equal(first.runsTested, 40);
+    assert.equal(first.changed.length, 25);
+    assert.equal(first.original.counts.east, 40);
+    assert.equal(first.alternative.counts.east, 15);
+    assert.match(await page.locator("#answer-a").textContent(), /Esme/);
+    assert.match(await page.locator("#answer-b").textContent(), /programme/);
+    await page.locator("#evidence summary").click();
+    await page
+      .getByRole("button", { name: "Replay Esme to Finn at 7.5 s" })
+      .click();
+    assert.equal((await state()).tick, 75);
+    await page.locator("#checkpoint").click();
+    const fork = await state();
+    assert.deepEqual(fork.original.people, fork.alternative.people);
+    assert.deepEqual(fork.original.evidence, fork.alternative.evidence);
+    await page.locator("#end").click();
+    const zero = await page
+      .locator("#messenger option")
+      .evaluateAll(
+        (items) =>
+          items.find((o) => o.textContent.endsWith("· 0 changed")).value,
+      );
+    await page.locator("#messenger").selectOption(zero);
+    await page.waitForFunction(
+      () => JSON.parse(render_game_to_text()).changed?.length === 0,
+    );
+    await page.locator("#best").click();
+    await page.waitForFunction(
+      () => JSON.parse(render_game_to_text()).changed?.length === 25,
+    );
+    await page.locator("#witness").selectOption("3");
+    assert.equal((await state()).witness, "Ida");
+    await page.locator("#new").click();
+    await page.waitForFunction(
+      () => JSON.parse(render_game_to_text()).seed === 747,
+    );
+    await page.locator("#play").click();
+    await page.waitForFunction(() => JSON.parse(render_game_to_text()).playing);
+    await page.locator("#play").click();
+    assert.equal((await state()).playing, false);
+    assert.deepEqual(errors, []);
+    console.log(
+      "Verified the ranked interventions, shared checkpoint, witness evidence, scrubbing, replay and a new crowd.",
+    );
+    const listeningURL = new URL(url);
+    listeningURL.search = "?room";
+    await page.goto(listeningURL.href);
     await page.locator("#nell").waitFor();
 
     for (const route of [

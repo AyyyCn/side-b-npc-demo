@@ -1,0 +1,470 @@
+<style>
+  * {
+    box-sizing: border-box;
+  }
+  html,
+  body {
+    margin: 0;
+    min-height: 100%;
+    background: #101214;
+    color: #eeeae0;
+    font-family: Inter, "Helvetica Neue", Arial, sans-serif;
+  }
+  body {
+    display: grid;
+    place-items: center;
+    min-height: 100svh;
+  }
+  main {
+    width: min(100%, 1800px);
+  }
+  .stage {
+    aspect-ratio: 16/9;
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+    background: #262725;
+  }
+  canvas,
+  #actors {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+  .stage::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: linear-gradient(
+      180deg,
+      #0c10136b,
+      transparent 19%,
+      transparent 68%,
+      #1011138a
+    );
+  }
+  header {
+    position: absolute;
+    z-index: 2;
+    left: 3%;
+    right: 3%;
+    top: 4%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    pointer-events: none;
+  }
+  h1 {
+    margin: 0;
+    font:
+      600 clamp(18px, 2vw, 34px) / 1 "Helvetica Neue",
+      Arial,
+      sans-serif;
+    letter-spacing: -0.045em;
+  }
+  .brand {
+    font-weight: 400;
+    color: #e4d6c5;
+    border-right: 1px solid #d8d0c48c;
+    padding-right: 0.75em;
+    margin-right: 0.6em;
+    font-size: 0.58em;
+    letter-spacing: 0.09em;
+    vertical-align: 0.15em;
+  }
+  nav,
+  .row {
+    display: flex;
+    gap: 7px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  nav {
+    pointer-events: auto;
+  }
+  button,
+  input {
+    font: inherit;
+  }
+  button {
+    cursor: pointer;
+    border: 1px solid #857c7066;
+    border-radius: 4px;
+    padding: 9px 13px;
+    background: #282828;
+    color: #e8e5dc;
+    font-size: 13px;
+    letter-spacing: 0.005em;
+  }
+  button:hover,
+  button:focus-visible,
+  button[aria-pressed="true"]:not(#sound) {
+    background: #4a443b;
+    border-color: #bcb3a2;
+  }
+  header button {
+    background: #1c1e1ddc;
+    font-size: 12px;
+  }
+  button.primary {
+    background: #e9dbc3;
+    color: #29271f;
+  }
+  button.primary:hover {
+    background: #f6ebd8;
+  }
+  #chain {
+    position: absolute;
+    left: 3%;
+    top: 12%;
+    z-index: 3;
+    color: #f1e4ca;
+    background: #171a19c9;
+    padding: 7px 11px;
+    font-size: clamp(11px, 1vw, 16px);
+    border-left: 2px solid #d5a56b;
+  }
+  #chain small {
+    display: block;
+    color: #d7b989;
+    font-size: 0.69em;
+    text-transform: uppercase;
+    letter-spacing: 0.13em;
+    margin-bottom: 0.32em;
+  }
+  #path {
+    white-space: nowrap;
+  }
+  #screen-controls {
+    position: absolute;
+    inset: auto 0 5% 0;
+    z-index: 5;
+    text-align: center;
+  }
+  #screen-play {
+    background: #e6d8be;
+    color: #2e251d;
+    padding: 0.8em 1.3em;
+    border: 0;
+  }
+  #screen-play:disabled {
+    opacity: 0.4;
+  }
+  #actors {
+    z-index: 1;
+    pointer-events: none;
+  }
+  #actors button {
+    position: absolute;
+    transform: translate(-50%, -100%);
+    padding: 0;
+    border: 0;
+    background: transparent;
+    pointer-events: auto;
+  }
+  #actors button:focus-visible {
+    outline: 1px solid #dccba8;
+  }
+  #actors button span {
+    position: absolute;
+    bottom: -1.4em;
+    left: 50%;
+    transform: translateX(-50%);
+    color: #f9f4e9;
+    background: #191b1be0;
+    border-radius: 2px;
+    padding: 3px 6px;
+    font-size: 12px;
+    opacity: 0;
+  }
+  #actors button:hover span,
+  #actors button:focus-visible span,
+  #actors button.speaking span {
+    opacity: 1;
+  }
+  #actors button:disabled {
+    pointer-events: none;
+  }
+  #subtitle {
+    position: absolute;
+    z-index: 3;
+    bottom: 5%;
+    left: 8%;
+    right: 8%;
+    text-align: center;
+    font-size: clamp(16px, 1.8vw, 29px);
+    font-weight: 500;
+    color: white;
+    text-shadow:
+      0 2px 6px black,
+      0 0 15px #171511;
+    pointer-events: none;
+  }
+  footer {
+    padding: 17px 3% 19px;
+    display: grid;
+    align-items: center;
+    grid-template-columns: minmax(200px, 0.8fr) minmax(360px, 1.2fr);
+    gap: 18px;
+    border-top: 1px solid #72665a88;
+    background: #191b1c;
+  }
+  #label {
+    color: #c6a988;
+    font-size: 11px;
+    letter-spacing: 0.13em;
+    text-transform: uppercase;
+  }
+  h2 {
+    font-size: clamp(16px, 1.5vw, 24px);
+    letter-spacing: -0.035em;
+    line-height: 1.24;
+    margin: 6px 0 0;
+    font-weight: 500;
+  }
+  .actions {
+    display: grid;
+    gap: 7px;
+    justify-items: end;
+  }
+  .row {
+    justify-content: flex-end;
+  }
+  #cast button {
+    border: 0;
+    padding: 5px 8px;
+    background: transparent;
+    color: #cfcbc1;
+  }
+  #cast button[aria-pressed="true"] {
+    color: #fff;
+    background: #4b4136;
+  }
+  form {
+    display: inline-flex;
+    gap: 3px;
+  }
+  input {
+    background: #282a2a;
+    border: 1px solid #756c61;
+    color: #f6f1e6;
+    border-radius: 3px;
+    width: 160px;
+    padding: 8px;
+    font-size: 13px;
+  }
+  #reply {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+  [hidden] {
+    display: none !important;
+  }
+  .screening main {
+    width: 100%;
+  }
+  .screening footer,
+  .screening nav,
+  .screening #actors span {
+    display: none;
+  }
+  .screening #chain {
+    top: 4.4%;
+    left: auto;
+    right: 3%;
+  }
+  .screening header {
+    top: 4.4%;
+  }
+  @media (max-width: 760px) {
+    footer {
+      grid-template-columns: 1fr;
+      gap: 10px;
+    }
+    .actions {
+      justify-items: start;
+    }
+    .row {
+      justify-content: flex-start;
+    }
+    header button {
+      padding: 5px 7px;
+      font-size: 10px;
+    }
+    header {
+      left: 2%;
+      right: 2%;
+    }
+    #chain {
+      top: 17%;
+    }
+    #subtitle {
+      font-size: 14px;
+    }
+    .stage {
+      aspect-ratio: 1.78;
+    }
+    button {
+      font-size: 12px;
+      padding: 7px;
+    }
+    #reply {
+      position: static;
+      width: auto;
+      height: auto;
+      clip-path: none;
+      font-size: 14px;
+      color: #d8bb97;
+      margin-top: 4px;
+    }
+  }
+
+  #subtitle {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.35em;
+    text-wrap: balance;
+  }
+  #subtitle:empty {
+    display: none;
+  }
+  #context:empty,
+  #quote:empty {
+    display: none;
+  }
+  #context {
+    font-size: 0.73em;
+    color: #e9ddc7;
+  }
+  #quote {
+    text-shadow:
+      0 2px 12px black,
+      0 1px 3px black;
+  }
+  .screening #subtitle {
+    bottom: 6.2%;
+    left: 4%;
+    right: 4%;
+    font-size: clamp(20px, 2.45vw, 48px);
+    letter-spacing: -0.023em;
+  }
+  .screening #context {
+    font-size: 0.58em;
+    letter-spacing: 0.005em;
+  }
+  .screening .stage::after {
+    background: linear-gradient(
+      180deg,
+      #0d101530,
+      transparent 22%,
+      transparent 56%,
+      #101015a8
+    );
+  }
+  .screening #actors {
+    display: none;
+  }
+  .screening #chain {
+    top: 5.1%;
+    right: 4%;
+    padding: 10px 17px;
+    font-size: clamp(13px, 1.2vw, 24px);
+  }
+  .screening header {
+    left: 4%;
+    top: 5.1%;
+  }
+  .screening h1 {
+    font-size: clamp(20px, 2.1vw, 41px);
+  }
+  #speaker {
+    font-size: 0.56em;
+    font-weight: 650;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: #f1d7b2;
+    margin-right: 0.7em;
+    vertical-align: 0.12em;
+  }
+  #speaker:empty {
+    display: none;
+  }
+  #line {
+    line-height: 1.2;
+  }
+  #stage-status {
+    display: none;
+  }
+  .screening #stage-status {
+    display: block;
+    position: absolute;
+    z-index: 4;
+    left: 8%;
+    right: 8%;
+    bottom: 8%;
+    text-align: center;
+    margin: 0;
+    color: #e7decb;
+    font-size: clamp(15px, 1.7vw, 26px);
+  }
+</style>
+<main>
+  <section class="stage" aria-label="Three-dimensional listening room">
+    <canvas></canvas>
+    <p id="stage-status" role="status">Opening the listening room…</p>
+    <div id="actors"></div>
+    <header>
+      <h1><span class="brand">ARCADE</span>Side B</h1>
+      <nav>
+        <button id="camera">Camera · Auto</button
+        ><button id="sound" aria-pressed="true">Sound on</button
+        ><button id="reset" hidden>Restart</button>
+      </nav>
+    </header>
+    <div id="chain" aria-label="Invitation history" hidden>
+      <small>Invitation path</small><span id="path"></span>
+    </div>
+    <div id="subtitle">
+      <div id="context"></div>
+      <div id="line"><span id="speaker"></span><span id="quote"></span></div>
+    </div>
+    <div id="screen-controls" hidden>
+      <button id="screen-play">Play demo</button>
+    </div>
+  </section>
+  <footer>
+    <div aria-live="polite">
+      <div id="label">Listening room</div>
+      <h2 id="prompt">Opening the room…</h2>
+      <div id="reply"></div>
+    </div>
+    <div class="actions">
+      <div id="cast" class="row" aria-label="Question a guest" hidden></div>
+      <div class="row">
+        <button id="nell" class="primary" hidden>Tell Nell · bartender</button
+        ><button id="silas" hidden>Tell Silas · regular</button>
+      </div>
+      <div id="queries" class="row" hidden>
+        <button data-kind="source">Who told you?</button
+        ><button data-kind="place">Where’s the show?</button
+        ><button data-kind="work">Busy tonight?</button>
+        <form hidden>
+          <input
+            aria-label="Ask in your own words"
+            placeholder="Your question…"
+            maxlength="120"
+            required
+          /><button>Ask</button>
+        </form>
+      </div>
+    </div>
+  </footer>
+</main>
