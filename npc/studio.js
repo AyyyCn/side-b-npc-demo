@@ -4,6 +4,7 @@ import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import { MeshoptDecoder } from "three/addons/libs/meshopt_decoder.module.js";
 import { createCast, reach } from "../cast.js";
 import { loadModels, characterModels } from "./rigs.js";
+import { sampleRig } from "./gait.js";
 import { venueMaterials } from "../material-library.js";
 
 export const paint = (color, roughness = 0.75, metalness = 0) =>
@@ -132,20 +133,19 @@ export async function studio(canvas, profiles, warm) {
   const v = new T.Vector3();
   let width = 0,
     height = 0;
-  function pose(id, position, yaw, moving, tick, hands = []) {
+  function pose(id, position, motion, tick, hands = []) {
     const a = actors.get(id);
-    a.root.position.set(position.x, 0.012, position.z);
-    a.root.rotation.y = yaw;
-    for (const item of a.pose) item.bone.quaternion.copy(item.original);
-    a.walk.weight = moving ? 1 : 0;
-    a.idle.weight = moving ? 0 : 1;
-    a.mixer.setTime(tick / 10 + a.height * 0.27);
-    for (const item of a.pose) item.original.copy(item.bone.quaternion);
+    a.root.position.set(position.x, 0.009, position.z);
+    a.root.rotation.y = motion.yaw;
+    sampleRig(a, motion, tick);
     a.root.updateWorldMatrix(true, true);
-    for (const [side, x, y, z] of hands) {
+    for (const [side, x, y, z, weight = 1] of hands) {
       a.root.worldToLocal(v.set(x, y, z));
-      reach(a, side, v.x, v.y, v.z, 0.97);
+      reach(a, side, v.x, v.y, v.z, weight);
     }
+  }
+  function handPosition(id, side, out) {
+    return actors.get(id).arms[side][2].getWorldPosition(out);
   }
   function render(eye, aim, fov = 38) {
     const w = canvas.clientWidth,
@@ -169,5 +169,5 @@ export async function studio(canvas, profiles, warm) {
     v.set(x, y, z).project(camera);
     return { x: (0.5 + 0.5 * v.x) * width, y: (0.5 - 0.5 * v.y) * height };
   }
-  return { scene, materials, pose, render, project };
+  return { scene, materials, pose, handPosition, render, project };
 }

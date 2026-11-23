@@ -107,15 +107,16 @@ test("the displayed example is computed, and other crowds can gain arrivals when
       (a, b) => b.changed.length - a.changed.length,
     )[0],
     alt = branch(s, best.hold);
-  assert.equal(s.checkpoint.guests[best.hold].name, "Esme");
-  assert.equal(s.finalHalls.filter((x) => x === 1).length, 40);
-  assert.equal(alt.east, 15);
-  assert.equal(alt.changed.length, 25);
-  const finn = s.checkpoint.guests.find((g) => g.name === "Finn").id;
-  const before = s.original.receipts[readGuest(s.original, END, finn).memory];
+  assert.equal(s.checkpoint.guests[best.hold].name, "Ada");
+  assert.equal(s.finalHalls.filter((x) => x === 1).length, 37);
+  assert.equal(alt.east, 10);
+  assert.equal(alt.changed.length, 27);
+  const witness = s.checkpoint.guests.find((g) => g.name === "Ida").id;
+  const before =
+    s.original.receipts[readGuest(s.original, END, witness).memory];
   assert.equal(before.from, best.hold);
-  assert.equal(before.tick, 75);
-  assert.equal(alt.receipts[readGuest(alt, END, finn).memory].from, -1);
+  assert.equal(before.tick, 84);
+  assert.equal(alt.receipts[readGuest(alt, END, witness).memory].from, -1);
   const second = prepare(722),
     other = branch(
       second,

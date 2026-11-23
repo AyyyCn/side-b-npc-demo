@@ -25,6 +25,21 @@ async function check() {
     page.on("pageerror", (error) => errors.push(error.message));
     const state = () =>
       page.evaluate(() => JSON.parse(window.render_game_to_text()));
+    const checkReplayedPose = () =>
+      page.evaluate(() => {
+        const slider = document.getElementById("scrub");
+        const canvas = document.getElementById("world");
+        function poseAt(tick) {
+          slider.value = String(tick);
+          slider.dispatchEvent(new Event("input"));
+          window.advanceTime(0);
+          return canvas.toDataURL();
+        }
+        const first = poseAt(88);
+        const earlier = poseAt(39);
+        poseAt(118);
+        return first !== earlier && first === poseAt(88);
+      });
     const url = process.env.DEMO_URL || "http://127.0.0.1:19447/";
     await page.goto(url);
     await page.locator("#open-social").waitFor();
@@ -37,18 +52,18 @@ async function check() {
     await page.locator("#loading").waitFor({ state: "hidden" });
     const first = await state();
     assert.equal(first.runsTested, 40);
-    assert.equal(first.changed.length, 25);
-    assert.equal(first.original.counts.east, 40);
-    assert.equal(first.alternative.counts.east, 15);
-    assert.match(await page.locator("#answer-a").textContent(), /Esme/);
+    assert.equal(first.changed.length, 27);
+    assert.equal(first.original.counts.east, 37);
+    assert.equal(first.alternative.counts.east, 10);
+    assert.match(await page.locator("#answer-a").textContent(), /Ada/);
     assert.match(await page.locator("#answer-b").textContent(), /programme/);
     const selectedCrowd = await page.locator("#to-crew").getAttribute("href");
-    assert.match(selectedCrowd, /seed=746&hold=31&run=altered/);
+    assert.match(selectedCrowd, /seed=133&hold=9&run=altered/);
     await page.locator("#evidence summary").click();
     await page
-      .getByRole("button", { name: "Replay Esme to Finn at 7.5 s" })
+      .getByRole("button", { name: "Replay Ada to Ida at 8.4 s" })
       .click();
-    assert.equal((await state()).tick, 75);
+    assert.equal((await state()).tick, 84);
     await page.locator("#checkpoint").click();
     const fork = await state();
     assert.deepEqual(fork.original.people, fork.alternative.people);
@@ -66,13 +81,13 @@ async function check() {
     );
     await page.locator("#best").click();
     await page.waitForFunction(
-      () => JSON.parse(render_game_to_text()).changed?.length === 25,
+      () => JSON.parse(render_game_to_text()).changed?.length === 27,
     );
-    await page.locator("#witness").selectOption("3");
-    assert.equal((await state()).witness, "Ida");
+    await page.locator("#witness").selectOption("2");
+    assert.equal((await state()).witness, "Finn");
     await page.locator("#new").click();
     await page.waitForFunction(
-      () => JSON.parse(render_game_to_text()).seed === 747,
+      () => JSON.parse(render_game_to_text()).seed === 134,
     );
     await page.locator("#play").click();
     await page.waitForFunction(() => JSON.parse(render_game_to_text()).playing);
@@ -107,6 +122,27 @@ async function check() {
       await page.waitForFunction(
         () => JSON.parse(render_game_to_text()).phase === "spreading",
       );
+      if (route.first === "silas") {
+        await page.evaluate(() => advanceTime(2100));
+        const centered = await page
+          .locator("#actors button")
+          .filter({ hasText: "Silas" })
+          .evaluate((actor) => {
+            const box = actor.getBoundingClientRect();
+            const stage = actor.parentElement.getBoundingClientRect();
+            return (
+              box.height > 0 &&
+              box.top >= stage.top &&
+              box.bottom <= stage.bottom &&
+              box.left >= stage.left &&
+              box.right <= stage.right
+            );
+          });
+        assert.ok(
+          centered,
+          "The camera should keep the guest in frame as he gets up",
+        );
+      }
       await page.evaluate(() => advanceTime(16000));
       const scene = await state();
       assert.equal(scene.phase, "concert");
@@ -155,15 +191,19 @@ async function check() {
       }, mode);
     await page.goto(new URL(selectedCrowd, url).href);
     await waitLab("crew");
-    assert.equal((await state()).audience, 15);
+    assert.equal((await state()).audience, 10);
     assert.ok(!(await state()).jobs.includes("zone"));
     await page.locator("#attendance").selectOption("original");
-    assert.equal((await state()).baseEnd, 215);
+    assert.equal((await state()).baseEnd, 223);
     await page.locator("#apply").click();
     const repair = await state();
     assert.equal(repair.incident.t, 39);
-    assert.equal(repair.finish, 241);
-    assert.equal(repair.keptTeamsEnd, 329);
+    assert.equal(repair.finish, 253);
+    assert.equal(repair.keptTeamsEnd, 368);
+    assert.ok(
+      await checkReplayedPose(),
+      "Crew poses should survive backward and forward scrubbing",
+    );
     await page.locator("#finish").click();
     assert.match(
       await page.locator("#scene-caption").textContent(),
@@ -185,6 +225,10 @@ async function check() {
       .click();
     await waitLab("perception");
     assert.deepEqual((await state()).visible, [true, false, false]);
+    assert.ok(
+      await checkReplayedPose(),
+      "Ida’s pose should match when revisiting the same tick",
+    );
     await page.locator("#search-start").click();
     await page.locator("#finish").click();
     assert.deepEqual((await state()).inspected, ["Catalogue", "Dispatch"]);

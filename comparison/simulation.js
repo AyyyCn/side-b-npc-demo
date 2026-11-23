@@ -1,4 +1,4 @@
-import {people} from "../npc/people.js";
+import { people } from "../npc/people.js";
 // Measurements are in metres. Each tick is 100 ms; each branch uses the same clock.
 export const HZ = 10;
 export const CHANGE = 28;
@@ -6,10 +6,12 @@ export const FORK = 67;
 export const HOLD = 40;
 export const END = 400;
 export const COUNT = people.length;
-export const DEFAULT_SEED = 746;
+export const DEFAULT_SEED = 133;
+export const DEFAULT_HOLD = 9;
 export const WALL = 4.7;
 export const DOOR = 1.45;
 export const HEARING = 2.35;
+export const PERSONAL_SPACE = 0.56;
 const TALK = 6;
 const BOUND_X = 12.3,
   BOUND_Z = 4.4;
@@ -49,7 +51,7 @@ export function makeWorld(seed) {
     );
   const tickets = shuffle(order.slice(), rand);
   const starts = shuffle(order.slice(), rand);
-  const guests = people.map(({name,index:id}) => {
+  const guests = people.map(({ name, index: id }) => {
     const position = starts[id],
       ticket = tickets[id];
     return {
@@ -63,6 +65,8 @@ export function makeWorld(seed) {
       z: -3.45 + Math.floor(position / 8) * 1.68 + (rand() - 0.5) * 0.48,
       yaw: rand() * Math.PI * 2,
       velocity: 0,
+      walked: 0,
+      walkMix: 0,
       seatX: 5.75 + (ticket % 5) * 1.25 + (rand() - 0.5) * 0.25,
       seatZ: -3.4 + Math.floor(ticket / 5) * 0.94 + (rand() - 0.5) * 0.19,
       lane: (rand() - 0.5) * 1.75,
@@ -199,7 +203,7 @@ function findListeners(w, near, hold) {
   }
 }
 
-function walk(w, g, near, hold) {
+function walk(w, g, hold) {
   const partner = w.guests[g.partner];
   if (held(w, g.id, hold) || busy(g, w.tick) || w.tick < g.leaves) {
     const yaw = partner ? Math.atan2(partner.x - g.x, partner.z - g.z) : g.yaw;
@@ -224,16 +228,6 @@ function walk(w, g, near, hold) {
   const stride = Math.min(g.pace / HZ, d);
   dx = (dx / d) * stride;
   dz = (dz / d) * stride;
-  near(g, (other) => {
-    const rx = g.x - other.x,
-      rz = g.z - other.z,
-      dd = Math.hypot(rx, rz);
-    if (dd < 0.47 && dd > 0.001) {
-      const repulsion = ((0.47 - dd) * 0.17) / dd;
-      dx += rx * repulsion;
-      dz += rz * repulsion;
-    }
-  });
   const next = {
     x: Math.max(-BOUND_X, Math.min(BOUND_X, g.x + dx)),
     z: Math.max(-BOUND_Z, Math.min(BOUND_Z, g.z + dz)),
@@ -246,6 +240,55 @@ function walk(w, g, near, hold) {
     speed > 0.03 ? Math.atan2(next.x - g.x, next.z - g.z) : g.yaw,
     speed,
   ];
+}
+
+// Reserve continuous relative movement, including where the neighbour has already committed
+// to walk this tick. Checking endpoints alone lets two people pass through one another.
+function motionClear(g, nx, nz, others, accepted) {
+  for (const o of others) {
+    const rx = g.x - o.x,
+      rz = g.z - o.z,
+      q = accepted[o.id];
+    const dx = nx - g.x - (q ? q[0] - o.x : 0),
+      dz = nz - g.z - (q ? q[1] - o.z : 0);
+    const u = Math.max(
+      0,
+      Math.min(1, -(rx * dx + rz * dz) / (dx * dx + dz * dz || 1)),
+    );
+    if ((rx + u * dx) ** 2 + (rz + u * dz) ** 2 < PERSONAL_SPACE ** 2)
+      return false;
+  }
+  for (const wall of [-WALL, WALL]) {
+    const d = 0.12 + PERSONAL_SPACE / 2;
+    if (Math.min(g.x, nx) > wall + d || Math.max(g.x, nx) < wall - d) continue;
+    if (Math.max(Math.abs(g.z), Math.abs(nz)) > DOOR - d) return false;
+  }
+  return Math.abs(nx) <= BOUND_X && Math.abs(nz) <= BOUND_Z;
+}
+const turns = [0, 0.36, -0.36, 0.76, -0.76, 1.18, -1.18, 1.52, -1.52].map(
+  (a) => [Math.cos(a), Math.sin(a)],
+);
+function reserveStep(g, intent, near, accepted) {
+  const dx = intent[0] - g.x,
+    dz = intent[1] - g.z;
+  if (Math.abs(dx) + Math.abs(dz) < 1e-8) return intent;
+  const others = [];
+  near(g, (o) => {
+    if (Math.abs(g.x - o.x) < 1.15 && Math.abs(g.z - o.z) < 1.15)
+      others.push(o);
+  });
+  for (const [c, s] of turns) {
+    const x = g.x + dx * c - dz * s,
+      z = g.z + dx * s + dz * c;
+    if (motionClear(g, x, z, others, accepted))
+      return [
+        x,
+        z,
+        Math.atan2(x - g.x, z - g.z),
+        Math.hypot(x - g.x, z - g.z) * HZ,
+      ];
+  }
+  return [g.x, g.z, g.yaw, 0];
 }
 
 export function step(w, hold = -1) {
@@ -263,14 +306,28 @@ export function step(w, hold = -1) {
   finishExchanges(w, hold);
   const near = neighbors(w.guests);
   findListeners(w, near, hold);
-  const next = w.guests.map((g) => walk(w, g, near, hold));
+  const next = new Array(COUNT);
+  for (let i = 0; i < COUNT; i++) {
+    const g = w.guests[(i + w.tick) % COUNT];
+    next[g.id] = reserveStep(g, walk(w, g, hold), near, next);
+  }
   for (let i = 0; i < w.guests.length; i++) {
     const g = w.guests[i];
-    [g.x, g.z, g.yaw, g.velocity] = next[i];
+    const [x, z, yaw, speed] = next[i];
+    g.walked += speed / HZ;
+    g.walkMix += Math.max(
+      -0.34,
+      Math.min(0.34, Math.min(1, speed / 0.72) - g.walkMix),
+    );
+    const delta = Math.atan2(Math.sin(yaw - g.yaw), Math.cos(yaw - g.yaw));
+    g.yaw += Math.max(-0.57, Math.min(0.57, delta));
+    g.x = x;
+    g.z = z;
+    g.velocity = speed;
   }
 }
 // Store presentation samples independently from the full checkpoint needed to restart the simulation.
-export const STRIDE = 5;
+export const STRIDE = 7;
 function sample(w, frames) {
   const offset = w.tick * COUNT * STRIDE;
   for (const g of w.guests) {
@@ -280,6 +337,8 @@ function sample(w, frames) {
     frames[i + 2] = g.yaw;
     frames[i + 3] = g.velocity;
     frames[i + 4] = g.memory;
+    frames[i + 5] = g.walked;
+    frames[i + 6] = g.walkMix;
   }
 }
 function run(w, hold, frames) {

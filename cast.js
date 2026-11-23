@@ -1,4 +1,5 @@
 import * as T from "three";
+import { WALK_DISTANCE } from "./npc/gait.js";
 import { sleeveMaterial } from "./record-art.js";
 import { clone } from "three/addons/utils/SkeletonUtils.js";
 
@@ -217,6 +218,8 @@ export function createCast(scene, rigs, castProfiles = profiles) {
       walk,
       sit,
       height: profile.height,
+      rigScale: profile.height / authoredHeight,
+      phase: actors.size * 0.217,
       yaw: profile.yaw,
       initialized: false,
       walkWeight: 0,
@@ -278,15 +281,26 @@ export function updateCast(actors, state, camera, dt, reset, seconds) {
       8,
       dt,
     );
-    const seat = a.sit && !p.source ? 1 : 0;
-    a.seatWeight = fresh ? seat : T.MathUtils.damp(a.seatWeight, seat, 2.7, dt);
-    if (a.sit) a.sit.weight = a.seatWeight;
+    let seatedBlend = 0;
+    if (a.sit) {
+      const rise = p.source
+        ? T.MathUtils.clamp((state.time - p.learned) / 1.65, 0, 1)
+        : 0;
+      a.sit.time = 3.55 + 1.65 * rise;
+      seatedBlend = 1 - T.MathUtils.smoothstep(rise, 0.8, 1);
+      a.sit.weight = seatedBlend;
+      a.seatWeight = 1 - T.MathUtils.smoothstep(rise, 0.02, 0.88);
+    }
     // The mixer skips writes for identical samples. Restore last frame's unmodified clip
     // before sampling so gestures never accumulate on a paused or constant track.
     for (const pose of a.pose) pose.bone.quaternion.copy(pose.original);
-    a.walk.weight = a.walkWeight * (1 - a.seatWeight);
-    a.idle.weight = (1 - a.walkWeight) * (1 - a.seatWeight);
-    a.mixer.update(Math.min(dt, 0.14));
+    a.walk.weight = a.walkWeight * (1 - seatedBlend);
+    a.idle.weight = (1 - a.walkWeight) * (1 - seatedBlend);
+    a.walk.time =
+      ((p.walked / (WALK_DISTANCE * a.rigScale) + a.phase) % 1) *
+      a.walk.getClip().duration;
+    a.idle.time = (seconds + a.phase * 4) % a.idle.getClip().duration;
+    a.mixer.update(0);
     for (const pose of a.pose) pose.original.copy(pose.bone.quaternion);
     a.root.updateWorldMatrix(true, true);
     a.talkWeight = T.MathUtils.damp(

@@ -5,6 +5,7 @@ import maya from "../art/crowd/maya.glb";
 import sam from "../art/crowd/sam.glb";
 import harper from "../art/crowd/harper.glb";
 import jordan from "../art/crowd/jordan.glb";
+import { WALK_DISTANCE } from "../npc/gait.js";
 import { COUNT, HZ } from "./simulation.js";
 const SAMPLES = 24;
 const wardrobe = [
@@ -23,12 +24,21 @@ const transform = new T.Object3D();
 const skinHeader = `
 attribute vec4 skinIndex;
 attribute vec4 skinWeight;
-attribute float pose;
+attribute vec3 pose;
 uniform highp sampler2D crowdAtlas;
-mat4 joint(const in float index) {
-  ivec2 uv = ivec2(int(index) * 4, int(pose));
+mat4 jointRow(float index, float row) {
+  ivec2 uv = ivec2(int(index) * 4, int(row));
   return mat4(texelFetch(crowdAtlas,uv,0),texelFetch(crowdAtlas,uv+ivec2(1,0),0),
               texelFetch(crowdAtlas,uv+ivec2(2,0),0),texelFetch(crowdAtlas,uv+ivec2(3,0),0));
+}
+mat4 sampleClip(float index,float frame,float base){
+  float lo=floor(frame),blend=fract(frame); float hi=mod(lo+1.0,${SAMPLES}.0);
+  return jointRow(index,base+lo)*(1.0-blend)+jointRow(index,base+hi)*blend;
+}
+mat4 joint(float index){
+  if(pose.z<.001)return sampleClip(index,pose.x,0.);
+  if(pose.z>.999)return sampleClip(index,pose.y,${SAMPLES}.0);
+  return sampleClip(index,pose.x,0.)*(1.-pose.z)+sampleClip(index,pose.y,${SAMPLES}.0)*pose.z;
 }`;
 function animateMaterial(material, texture) {
   material.onBeforeCompile = (shader) => {
@@ -91,8 +101,8 @@ function bakeRig(gltf, scene) {
     }
   }
   const pose = new T.InstancedBufferAttribute(
-    new Float32Array(COUNT),
-    1,
+    new Float32Array(COUNT * 3),
+    3,
   ).setUsage(T.DynamicDrawUsage);
   return {
     duration,
@@ -171,13 +181,14 @@ export async function loadCrowd(scene) {
     rigs.forEach((rig, r) => {
       groups[r].forEach((g, j) => {
         const p = poses[g.id],
-          clip = p.speed > 0.2 ? 1 : 0;
-        rig.pose.array[j] =
-          clip * SAMPLES +
-          Math.floor(
-            ((time / HZ / rig.duration[clip] + g.id * 0.217) % 1) * SAMPLES,
-          );
-        transform.position.set(p.x, 0.035, p.z);
+          offset = g.id * 0.217;
+        rig.pose.setXYZ(
+          j,
+          ((time / HZ / rig.duration[0] + offset) % 1) * SAMPLES,
+          ((p.travel / (WALK_DISTANCE * g.height) + offset) % 1) * SAMPLES,
+          p.weight,
+        );
+        transform.position.set(p.x, 0.009, p.z);
         transform.scale.setScalar(g.height);
         transform.rotation.set(0, p.yaw, 0);
         transform.updateMatrix();

@@ -1,5 +1,7 @@
 import * as T from "three";
 import { studio, box, rod, sign, spot, paint, glow } from "../npc/studio.js";
+import { cart } from "./floor.js";
+import { motionTrack } from "../npc/gait.js";
 import { crew } from "./scenario.js";
 import { memberState, rackAt, jobAt } from "./planner.js";
 
@@ -29,9 +31,9 @@ export async function crewView(canvas) {
       box(s, wax, x + 0.029, 0.008, z + 0.038, 0.027, 0.004, 0.02);
     }
   }
-  box(s, black, -6.05, 2.1, 0.2, 0.16, 4.25, 7.3);
+  box(s, black, -7.05, 2.1, 0.2, 0.16, 4.25, 7.3);
   for (let z = -2.5; z < 3.8; z += 0.18)
-    box(s, paint("#302d30"), -5.95, 1.96, z, 0.13, 3.96, 0.074);
+    box(s, paint("#302d30"), -6.95, 1.96, z, 0.13, 3.96, 0.074);
   for (const x of [-5.48, 5.48])
     for (const z of [-2.7, -2.37]) {
       rod(s, metal, [x, 0.1, z], [x, 3.24, z], 0.05);
@@ -153,12 +155,30 @@ export async function crewView(canvas) {
       );
     return root;
   }
-  const rack = roadCase(s, 0, 0, 1.12, 0.89, 0.76, "PA  /  04");
-  for (const a of [-1, 1])
-    for (const x of [-0.17, 0.17])
-      rod(rack, metal, [x, 0.86, a * 0.38], [x, 0.86, a * 0.46], 0.019);
-  for (const a of [-1, 1])
-    rod(rack, metal, [-0.17, 0.86, a * 0.46], [0.17, 0.86, a * 0.46], 0.027);
+  const rack = roadCase(
+    s,
+    0,
+    0,
+    cart.halfX * 2,
+    0.9,
+    cart.halfZ * 2,
+    "PA  /  04",
+  );
+  for (const side of [-1, 1]) {
+    const z = side * (cart.halfZ - 0.055);
+    rod(rack, metal, [-cart.halfX, 0.92, z], [cart.barX, cart.barY, z], 0.027);
+  }
+  rod(
+    rack,
+    metal,
+    [cart.barX, cart.barY, -0.61],
+    [cart.barX, cart.barY, 0.61],
+    0.029,
+  );
+  box(rack, black, 0.045, 0.76, -cart.halfZ, 0.45, 0.23, 0.035);
+  for (const x of [-0.08, 0.04, 0.16])
+    box(rack, metal, x, 0.8, -cart.halfZ - 0.023, 0.063, 0.072, 0.029);
+  roadCase(s, 0.05, -1.96, 1.24, 0.82, 0.5, "SHOW CONTROL");
   roadCase(s, -4.7, -2.15, 1.06, 0.82, 0.58, "PATCH");
   roadCase(s, -3.47, -2.23, 1.1, 0.68, 0.66);
   roadCase(s, 4.47, -2.28, 1.1, 0.64, 0.58);
@@ -218,37 +238,81 @@ export async function crewView(canvas) {
     0.06,
     0.025,
   );
+  let cachedPlan, gait;
+  const activity = (plan, i, t) => {
+    const p = memberState(plan, i, t),
+      push = p.kind === "work" && p.part.task === "rack";
+    const job = p.part?.task;
+    let facing;
+    if (push || (job === "rack" && p.kind === "standby")) facing = Math.PI / 2;
+    else if (p.kind === "work" || p.kind === "standby")
+      facing = job === "sound" ? 0 : Math.PI;
+    return { ...p, pushing: push, facing };
+  };
+  function contact(plan, id, t, test) {
+    return [0, 0.65, 1.3, 1.95].reduce(
+      (weight, lag) =>
+        weight + (test(memberState(plan, id, Math.max(0, t - lag))) ? 0.25 : 0),
+      0,
+    );
+  }
   return (plan, tick) => {
+    if (plan !== cachedPlan) {
+      cachedPlan = plan;
+      const end = Math.max(
+        plan.end,
+        ...plan.tracks.map((tr) => tr.at(-1)?.end ?? 0),
+      );
+      gait = crew.map((m) =>
+        motionTrack(end, (t) => activity(plan, m.id, t), Math.PI / 2),
+      );
+    }
     const r = rackAt(plan, tick);
     rack.position.set(r.x, 0, r.z);
     for (const m of crew) {
-      const p = memberState(plan, m.id, tick),
-        part = p.part,
-        dx = part ? part.to.x - part.from.x : 0,
-        dz = part ? part.to.z - part.from.z : 0;
-      let yaw =
-          part && Math.hypot(dx, dz) > 0.01 ? Math.atan2(dx, dz) : Math.PI,
-        moving = p.kind === "walk",
+      const p = activity(plan, m.id, tick),
+        motion = gait[m.id](tick),
         hands = [];
-      if (p.kind === "work" && part.task === "rack") {
-        const side = p.z > r.z ? 1 : -1;
-        yaw = side < 0 ? 0.25 : Math.PI - 0.25;
-        const z = r.z + side * 0.46;
-        hands = [
-          ["l", r.x + (side < 0 ? 0.17 : -0.17), 0.86, z],
-          ["r", r.x + (side < 0 ? -0.17 : 0.17), 0.86, z],
-        ];
-        moving = true;
-      } else if (p.kind === "work" || p.kind === "standby") {
-        yaw = Math.PI;
+      const grip = contact(
+        plan,
+        m.id,
+        tick,
+        (a) => a.kind === "work" && a.part.task === "rack",
+      );
+      const radio = contact(plan, m.id, tick, (a) => a.kind === "away");
+      if (grip) {
+        const lane = p.z < r.z ? -cart.stanceZ : cart.stanceZ;
+        hands.push(
+          ["l", r.x + cart.barX, cart.barY, r.z + lane - 0.15, grip],
+          ["r", r.x + cart.barX, cart.barY, r.z + lane + 0.15, grip],
+        );
       }
-      if (p.kind === "away") {
-        yaw = -1.06;
-        const x = p.x - 0.13 * Math.cos(yaw) + 0.08 * Math.sin(yaw),
-          z = p.z + 0.13 * Math.sin(yaw) + 0.08 * Math.cos(yaw);
-        hands = [["r", x, profiles[m.person.key].height * 0.91, z]];
+      if (radio) {
+        const yaw = motion.yaw;
+        hands.push([
+          "r",
+          p.x - 0.15 * Math.cos(yaw) + 0.075 * Math.sin(yaw),
+          profiles[m.person.key].height * 0.88,
+          p.z + 0.15 * Math.sin(yaw) + 0.075 * Math.cos(yaw),
+          radio,
+        ]);
+      } else if (p.kind === "work" && p.part.task !== "rack") {
+        const sign = p.part.task === "sound" ? 1 : -1;
+        const weight = contact(
+          plan,
+          m.id,
+          tick,
+          (a) => a.kind === "work" && a.part.task === p.part.task,
+        );
+        hands.push([
+          "r",
+          p.x - sign * 0.14,
+          0.95 + 0.018 * Math.sin(tick * 0.25),
+          p.z + sign * 0.43,
+          weight * 0.9,
+        ]);
       }
-      v.pose(m.person.key, p, yaw, moving, tick, hands);
+      v.pose(m.person.key, p, motion, tick, hands);
     }
     readyLight.material.color.set(
       jobAt(plan, "lights", tick).done ? "#a5ffb5" : "#665741",

@@ -1,11 +1,11 @@
-import {byKey} from "./npc/people.js";
+import { byKey } from "./npc/people.js";
 const cast = [
   {
     id: "nell",
     name: byKey.nell.name,
     role: "Bartender",
     x: -3.49,
-    z: -2.4,
+    z: -2.52,
     friends: ["kit"],
     call: "Kit, Lark’s doing a set. Pass it on.",
   },
@@ -75,6 +75,7 @@ export function createRoom(onState) {
       ...p,
       source: "",
       learned: 0,
+      walked: 0,
       walking: false,
       arrived: false,
       untilFree: 0,
@@ -103,9 +104,20 @@ export function createRoom(onState) {
       distance = Math.hypot(dx, dz);
     if (distance <= limit + 0.005) return true;
     const step = Math.min(distance - limit, 1.52 * dt);
-    p.x += (dx * step) / distance;
-    p.z += (dz * step) / distance;
-    p.walking = true;
+    // Turn around a neighbour instead of cutting through their standing pose.
+    for (const angle of [0, 0.36, -0.36, 0.76, -0.76, 1.2, -1.2, 1.52, -1.52]) {
+      const c = Math.cos(angle),
+        s = Math.sin(angle);
+      const nx = p.x + ((dx * c - dz * s) * step) / distance,
+        nz = p.z + ((dx * s + dz * c) * step) / distance;
+      if (people.some((q) => q !== p && Math.hypot(nx - q.x, nz - q.z) < 0.66))
+        continue;
+      p.x = nx;
+      p.z = nz;
+      p.walked += step;
+      p.walking = true;
+      break;
+    }
     return false;
   }
   function tick(dt) {
@@ -181,6 +193,7 @@ export function createRoom(onState) {
         recipient: p.friends[0] || "",
         learned: p.learned,
         walking: p.walking,
+        walked: p.walked,
         source: p.source,
         arrived: p.arrived,
       })),

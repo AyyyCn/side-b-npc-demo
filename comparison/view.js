@@ -167,6 +167,8 @@ export async function createView(canvas) {
         z: mix(1),
         yaw: base + Math.atan2(Math.sin(delta), Math.cos(delta)) * f,
         speed: mix(3),
+        travel: mix(5),
+        weight: mix(6),
       };
       poses.push(pose);
       transforms.position.set(pose.x, 0.052, pose.z);

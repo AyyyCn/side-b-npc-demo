@@ -1,4 +1,6 @@
 import * as T from "three";
+import { motionTrack } from "../npc/gait.js";
+import { searchState } from "./search.js";
 import { studio, box, sign, rod, paint, glow, spot } from "../npc/studio.js";
 import { sleeveMaterial } from "../record-art.js";
 import {
@@ -207,7 +209,20 @@ export async function archiveView(canvas) {
   const lamps = stations.map((st) =>
     box(s, glow("#decba5"), st.x, 1.1, -1.805, 0.25, 0.055, 0.012),
   );
+  const wrist = new T.Vector3();
+  let previousRun, gait;
   return (run, tick, state) => {
+    if (previousRun !== run) {
+      previousRun = run;
+      gait = motionTrack(
+        run.end,
+        (t) => {
+          const s = searchState(run, t);
+          return { ...s.pos, facing: s.yaw };
+        },
+        Math.atan2(2.6, -4.25),
+      );
+    }
     const a = (run.screen.left + run.screen.right) / 2,
       w = run.screen.right - run.screen.left;
     screen.position.set(a, 0, (run.screen.front + run.screen.back) / 2);
@@ -253,14 +268,37 @@ export async function archiveView(canvas) {
     });
     const inspecting = state.visit && tick >= state.visit.arrive,
       bin = inspecting ? stations[state.visit.i] : null;
-    v.pose(
-      observer.key,
-      state.pos,
-      state.yaw,
-      state.speed > 0.1,
-      tick,
-      bin ? [["r", bin.x - 0.13, 1.16, -1.71]] : [],
-    );
+    const pickup = Math.max(0, Math.min(1, (tick - run.end + 6) / 6));
+    const motion = gait(tick),
+      hands = [];
+    if (pickup > 0) {
+      hands.push([
+        "r",
+        target.x + 0.17,
+        1.14 + pickup * 0.12,
+        -1.72 + pickup * 0.17,
+        1,
+      ]);
+    } else if (bin) {
+      const amount = Math.min(
+        1,
+        (tick - state.visit.arrive) / 2,
+        state.visit.found ? 1 : (state.visit.end - tick) / 2,
+      );
+      hands.push(["r", bin.x + 0.15, 1.16, -1.73, amount]);
+    }
+    v.pose(observer.key, state.pos, motion, tick, hands);
+    if (pickup > 0) {
+      v.handPosition(observer.key, "r", wrist);
+      record.visible = true;
+      const f = pickup * pickup * (3 - 2 * pickup);
+      record.position.set(
+        target.x + (wrist.x - 0.13 - target.x) * f,
+        1.11 + (wrist.y + 0.09 - 1.11) * f,
+        -2.04 + (wrist.z - 0.015 + 2.04) * f,
+      );
+      record.rotation.x = -0.12 - 0.17 * f;
+    } else record.rotation.x = -0.12;
     v.render([3.12, 3.83, 7.52], [-0.12, 1.18, -0.63], 36.5);
     return v.project(state.pos.x, 1.78, state.pos.z);
   };

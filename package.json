@@ -1,13 +1,13 @@
 {
   "name": "side-b-npc-demo",
-  "version": "3.0.0",
+  "version": "3.1.0",
   "private": true,
   "description": "Three playable NPC systems for social memory, cooperative planning and perception-driven search.",
   "type": "module",
   "scripts": {
     "build": "node build.mjs",
     "start": "node serve.mjs",
-    "test": "node --test comparison/simulation.test.js crew/planner.test.js perception/search.test.js && node smoke.cjs",
+    "test": "node --test comparison/simulation.test.js crew/planner.test.js perception/search.test.js npc/motion.test.js && node smoke.cjs",
     "build:site": "node build.mjs --site"
   },
   "engines": {

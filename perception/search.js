@@ -64,8 +64,9 @@ const dirs = [
   [-1, 1],
   [1, 1],
 ];
+export const WALK_CLEARANCE = 0.4;
 export function route(a, b, box) {
-  const clear = (p, q) => !crosses(p, q, box, 0.24);
+  const clear = (p, q) => !crosses(p, q, box, WALK_CLEARANCE);
   if (clear(a, b)) return [a, b];
   const key = (p) => p.x + "," + p.z;
   const start = { p: a, g: 0, f: dist(a, b), parent: null },

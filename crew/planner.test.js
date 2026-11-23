@@ -76,15 +76,15 @@ test("interruption preserves positions, accomplished work and unrelated tasks at
       [2, 0],
     ],
   );
-  assert.equal(transfers[1].start, 71);
-  assert.ok(near(rackAt(repaired, 70), rackAt(repaired, t)));
+  assert.equal(transfers[1].start, 69);
+  assert.ok(near(rackAt(repaired, 68), rackAt(repaired, t)));
   assert.equal(memberState(repaired, 1, 158).kind, "away");
   assert.deepEqual(
     repaired.entries.find((e) => e.job.id === "feed"),
     p.entries.find((e) => e.job.id === "feed"),
   );
-  assert.equal(repaired.end, 241);
-  assert.equal(recover(p, t, 1, 120, { keepTeams: true }).end, 329);
+  assert.equal(repaired.end, 253);
+  assert.equal(recover(p, t, 1, 120, { keepTeams: true }).end, 368);
   assert.ok(repaired.end < DOORS);
 });
 test("reassignment can always match or improve the fixed-team comparison for this work order", () => {
@@ -106,12 +106,12 @@ test("reassignment can always match or improve the fixed-team comparison for thi
   }
 });
 test("East Hall demand comes from the selected social simulation", () => {
-  const f = readForecast(new URLSearchParams("seed=746&hold=31"));
-  assert.deepEqual([f.original, f.altered], [40, 15]);
+  const f = readForecast(new URLSearchParams("seed=133&hold=9"));
+  assert.deepEqual([f.original, f.altered], [37, 10]);
   assert.ok(makeJobs(f.original).some((j) => j.id === "zone"));
   assert.ok(!makeJobs(f.altered).some((j) => j.id === "zone"));
   const f2 = readForecast(new URLSearchParams("seed=722&hold=16"));
-  assert.deepEqual([f2.original, f2.altered], [25, 40]);
+  assert.deepEqual([f2.original, f2.altered], [33, 34]);
 });
 test("the solver chooses the earliest finishing team across a small independently enumerated schedule", () => {
   const point = { x: 0, z: 0 },
@@ -139,7 +139,7 @@ test("the solver chooses the earliest finishing team across a small independentl
 test("Ida's observed retrieval time releases the audio check in the crew plan", async () => {
   const { simulate } = await import("../perception/search.js");
   for (const [closed, expected] of [
-    [true, 250],
+    [true, 252],
     [false, 227],
   ]) {
     const record = simulate(closed, "dispatch"),

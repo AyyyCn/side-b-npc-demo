@@ -159,15 +159,22 @@ export async function createStage(canvas, hit) {
       lastRelay = state.speaker;
       lastLineAt = state.time;
     }
+    const solo =
+      state.phase === "spreading" &&
+      state.people.find(
+        (guest) => guest.source === "you" && !guest.recipient && !guest.arrived,
+      );
     const subject =
       state.speaker ||
       (state.phase === "spreading" && state.time - lastLineAt < 0.9
         ? lastRelay
-        : "");
+        : "") ||
+      solo?.id;
     const talk = actors.get(subject),
       guest = state.people.find((p) => p.id === subject);
     if (mode === "director" && talk && state.phase !== "choose") {
       const p = talk.root.position;
+      const partner = actors.get(guest.partner || guest.recipient);
       if (state.question) {
         shot = "question-" + guest.id;
         const seated = talk.seatWeight > 0.5,
@@ -179,11 +186,10 @@ export async function createStage(canvas, hit) {
           p.z + (seated ? 2.47 : 2.92),
         );
         fov = 34;
-      } else {
-        const next = actors.get(guest.partner || guest.recipient);
+      } else if (partner) {
         shot = "relay-" + guest.id;
-        const nx = next?.root.position.x ?? p.x,
-          nz = next?.root.position.z ?? p.z;
+        const nx = partner.root.position.x,
+          nz = partner.root.position.z;
         goal.set((p.x + nx) * 0.5, 1.32, (p.z + nz) * 0.5);
         const dx = nx - p.x,
           dz = nz - p.z,
@@ -195,6 +201,12 @@ export async function createStage(canvas, hit) {
           goal.z + (dx / len) * 3.1 * side + 1.0,
         );
         fov = guest.id === "nell" ? 35 : 39;
+      } else {
+        shot = "solo-" + guest.id;
+        const focusY = 1.06 - 0.19 * talk.seatWeight;
+        goal.set(p.x, focusY, p.z);
+        eye.set(p.x + 1.65, focusY + 0.57, p.z + 3.15);
+        fov = 39;
       }
     } else if (mode === "director" && state.phase !== "choose") {
       shot = "audience";

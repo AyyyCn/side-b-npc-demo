@@ -1,4 +1,6 @@
 import { crew, TICKS_PER_SECOND as HZ, points } from "./scenario.js";
+import { stance as handle } from "./floor.js";
+import { execute } from "./execution.js";
 const clamp = (x, lo, hi) => Math.max(lo, Math.min(hi, x));
 const copy = (p) => ({ x: p.x, z: p.z });
 const mix = (a, b, k) => ({
@@ -7,11 +9,6 @@ const mix = (a, b, k) => ({
 });
 const travel = (from, to, pace) =>
   Math.ceil((Math.hypot(to.x - from.x, to.z - from.z) * HZ) / pace - 1e-9);
-function handle(p, count, slot, id) {
-  if (count === 1) return copy(p);
-  if (id === "rack") return { x: p.x, z: p.z + (slot === 0 ? -0.58 : 0.58) };
-  return { x: p.x + (slot === 0 ? -0.42 : 0.42), z: p.z };
-}
 function teams(roles, members) {
   const all = [];
   function fill(team) {
@@ -162,6 +159,10 @@ export function initialPlan(jobs, members = crew) {
     {},
     jobs,
   );
+  if (members === crew) {
+    const physical = execute(members, entries);
+    return assemble(jobs, members, physical.entries, physical.tracks);
+  }
   return assemble(jobs, members, entries, tracksFor(entries, members));
 }
 export function positionAt(part, t) {
@@ -223,8 +224,7 @@ export function recover(
   const { jobs, members } = base,
     fixed = {},
     prefix = [],
-    remainders = new Map(),
-    locked = new Set();
+    remainders = new Map();
   const available = members.map((m, i) => ({
     free: t + (absent === i ? awayTicks : 0),
     at: copy(memberState(base, i, t)),
@@ -240,7 +240,6 @@ export function recover(
       fixed[e.job.id] = e.end;
       prefix.push(e);
       e.team.forEach((i, s) => {
-        locked.add(i);
         available[i] = {
           free: e.end,
           at: handle(e.to, e.team.length, s, e.job.id),
@@ -266,36 +265,46 @@ export function recover(
     remaining,
     originalTeams,
   );
-  const later = tracksFor(suffix, members);
-  const tracks = base.tracks.map((track, i) => {
+  const incident = { t, absent, until: t + awayTicks };
+  const onStage = members === crew;
+  const active = prefix.filter((entry) => entry.end > t);
+  const next = onStage
+    ? execute(members, suffix, {
+        start: t,
+        initial: members.map((m) => copy(memberState(base, m.id, t))),
+        rack: rackAt(base, t),
+        finished: fixed,
+        active,
+        incident,
+      })
+    : { entries: suffix, tracks: tracksFor(suffix, members) };
+  const tracks = base.tracks.map((track, id) => {
     const kept = [];
     for (const part of track) {
-      if (part.end <= t) {
-        kept.push(part);
-        continue;
-      }
-      if (
-        locked.has(i) &&
+      if (part.start > t) break;
+      const continues =
+        !onStage &&
         part.kind === "work" &&
-        part.start <= t &&
-        t < part.end
-      ) {
-        kept.push(part);
-        continue;
-      }
-      if (part.start < t)
+        active.some((e) => e.job.id === part.task && e.team.includes(id));
+      if (part.end <= t || continues) kept.push(part);
+      else if (part.start < t)
         kept.push({ ...part, end: t, to: positionAt(part, t) });
     }
-    if (i === absent) {
-      const p = copy(memberState(base, i, t));
-      kept.push(segment(t, t + awayTicks, p, p, null, "away"));
+    if (!onStage && id === absent) {
+      const at = copy(memberState(base, id, t));
+      kept.push(segment(t, incident.until, at, at, null, "away"));
     }
-    return [...kept, ...later[i]];
+    return [...kept, ...next.tracks[id]];
   });
-  return {
-    ...assemble(jobs, members, [...prefix, ...suffix], tracks),
-    incident: { t, absent, until: t + awayTicks },
+  const candidate = {
+    ...assemble(jobs, members, [...prefix, ...next.entries], tracks),
+    incident,
   };
+  if (onStage && !keepTeams) {
+    const fixedPlan = recover(base, t, absent, awayTicks, { keepTeams: true });
+    if (fixedPlan.end < candidate.end) return fixedPlan;
+  }
+  return candidate;
 }
 export function checkpoint(plan) {
   const rack = plan.entries.find((e) => e.job.id === "rack");

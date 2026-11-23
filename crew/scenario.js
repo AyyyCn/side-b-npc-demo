@@ -3,6 +3,7 @@ import {
   prepare,
   branch,
   DEFAULT_SEED,
+  DEFAULT_HOLD,
   COUNT,
 } from "../comparison/simulation.js";
 export const TICKS_PER_SECOND = 10;
@@ -11,9 +12,10 @@ export const SECOND_ZONE_AT = 24;
 export const points = {
   dock: { x: -4.0, z: 0.74 },
   stage: { x: 1.9, z: 0.74 },
-  patch: { x: -2.08, z: -1.51 },
+  audio: { x: 1.94, z: -0.34 },
+  patch: { x: -2.08, z: -1.46 },
   lights: { x: 2.12, z: -1.48 },
-  wing: { x: 4.2, z: -0.32 },
+  wing: { x: 4.47, z: -1.4 },
   booth: { x: 0.05, z: -1.1 },
 };
 export const crew = [
@@ -21,21 +23,24 @@ export const crew = [
     person: byKey.esme,
     title: "Sound engineer",
     skills: ["sound", "move"],
-    home: { x: -4.4, z: 1.48 },
+    home: { x: -5.49, z: 1.42 },
+    park: { x: -4.9, z: 3.15 },
     pace: 1.65,
   },
   {
     person: byKey.wes,
     title: "Stagehand",
     skills: ["move", "power"],
-    home: { x: -4.55, z: 0.04 },
+    home: { x: -5.5, z: 0.02 },
+    park: { x: -5.72, z: -0.88 },
     pace: 1.55,
   },
   {
     person: byKey.nina,
     title: "Stage manager",
     skills: ["move", "cue", "power"],
-    home: { x: -1.5, z: -1.27 },
+    home: { x: -1.5, z: -1.25 },
+    park: { x: -3.55, z: -1.3 },
     pace: 1.62,
   },
   {
@@ -43,6 +48,7 @@ export const crew = [
     title: "Show technician",
     skills: ["lights", "sound", "cue"],
     home: { x: 2.65, z: -1.21 },
+    park: { x: 3.38, z: -1.26 },
     pace: 1.52,
   },
 ].map((g, id) => ({ ...g, id, name: g.person.name }));
@@ -65,7 +71,7 @@ export function readForecast(params) {
     /^\d{1,2}$/.test(candidate) &&
     Number(candidate) < COUNT
       ? Number(candidate)
-      : byKey.esme.index;
+      : DEFAULT_HOLD;
   const session = prepare(seed);
   return {
     seed,
@@ -111,7 +117,7 @@ export function makeJobs(attendance, recordReady = 0) {
       short: "Sound",
       release: recordReady,
       roles: ["sound"],
-      from: points.stage,
+      from: points.audio,
       ticks: 48,
       after: ["rack", "feed"],
     },

@@ -34,7 +34,7 @@ test("the same filing event produces a different observation when the screen mov
     clear.visits.map((v) => v.i),
     [2],
   );
-  assert.deepEqual([blocked.end, clear.end], [119, 96]);
+  assert.deepEqual([blocked.end, clear.end], [121, 96]);
 });
 test("a hidden destination cannot leak into the policy before the first inspection", () => {
   const a = simulate(true, "catalog"),
@@ -57,8 +57,7 @@ test("search remains physically reachable and consistent for every shelf and scr
     for (const s of stations) {
       const r = simulate(closed, s.id);
       assert.deepEqual(r, simulate(closed, s.id));
-      for (const m of r.moves)
-        assert.ok(!crosses(m.from, m.to, r.screen, 0.24));
+      for (const m of r.moves) assert.ok(!crosses(m.from, m.to, r.screen, 0.4));
       for (const e of r.observations)
         assert.ok(Math.abs(e.weights.reduce((a, b) => a + b) - 1) < 1e-9);
       for (const visit of r.visits) {
