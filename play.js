@@ -270,12 +270,8 @@ async function boot() {
   $("#stage-status").hidden = true;
   if (screening) $("#screen-controls").hidden = false;
   requestAnimationFrame(frame);
-  if (location.protocol === "http:" || location.protocol === "https:") {
-    try {
-      model = (await (await fetch("/capabilities")).json()).freeText === true;
-      if (scene) updateControls();
-    } catch {}
-  }
+  model = document.documentElement.hasAttribute("data-interviews");
+  updateControls();
 }
 window.advanceTime = advance;
 window.render_game_to_text = () =>

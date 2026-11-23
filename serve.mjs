@@ -3,7 +3,12 @@ import { readFile } from "node:fs/promises";
 
 const model = process.env.MODEL_URL;
 const port = Number(process.env.PORT || 19447);
-const html = await readFile(new URL("./play.html", import.meta.url));
+const html = (
+  await readFile(new URL("./play.html", import.meta.url), "utf8")
+).replace(
+  '<html lang="en">',
+  model ? '<html lang="en" data-interviews>' : '<html lang="en">',
+);
 const kinds = ["source", "place", "work", "other"];
 async function interpret(question) {
   const response = await fetch(new URL("/v1/chat/completions", model), {

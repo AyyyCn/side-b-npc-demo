@@ -1,0 +1,71 @@
+<style>
+  .npc-nav {
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin: 0 auto;
+    padding: 0 clamp(18px, 3.6vw, 72px);
+    width: 100%;
+    max-width: 2010px;
+    min-height: 54px;
+    border-bottom: 1px solid #c6c8bc;
+    background: #f1f0e8;
+    color: #28352e;
+    font-family: Inter, "Helvetica Neue", Arial, sans-serif;
+    line-height: 1.15;
+  }
+  .npc-nav div {
+    display: flex;
+    align-items: center;
+    gap: clamp(12px, 2vw, 34px);
+    flex-wrap: wrap;
+  }
+  .npc-nav a {
+    color: inherit;
+    text-decoration: none;
+    font-size: 13px;
+    white-space: nowrap;
+  }
+  .npc-nav .npc-wordmark {
+    font-size: 23px;
+    font-weight: 750;
+    letter-spacing: -0.065em;
+  }
+  .npc-nav a[aria-current] {
+    font-weight: 730;
+  }
+  .npc-nav a:hover,
+  .npc-nav a:focus-visible {
+    text-decoration: underline;
+    text-underline-offset: 4px;
+  }
+  body:has(.stage) > .npc-nav {
+    align-self: end;
+  }
+  body:has(.stage):has(> .npc-nav) {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+  @media (max-width: 670px) {
+    .npc-nav {
+      gap: 10px;
+      padding: 12px 16px;
+      align-items: flex-start;
+    }
+    .npc-nav .npc-wordmark {
+      font-size: 19px;
+    }
+    .npc-nav div {
+      justify-content: flex-end;
+      column-gap: 13px;
+      row-gap: 8px;
+    }
+    .npc-nav a {
+      font-size: 11px;
+    }
+  }
+</style>

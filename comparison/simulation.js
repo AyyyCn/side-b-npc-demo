@@ -1,10 +1,11 @@
+import {people} from "../npc/people.js";
 // Measurements are in metres. Each tick is 100 ms; each branch uses the same clock.
 export const HZ = 10;
 export const CHANGE = 28;
 export const FORK = 67;
 export const HOLD = 40;
 export const END = 400;
-export const COUNT = 40;
+export const COUNT = people.length;
 export const DEFAULT_SEED = 746;
 export const WALL = 4.7;
 export const DOOR = 1.45;
@@ -12,10 +13,6 @@ export const HEARING = 2.35;
 const TALK = 6;
 const BOUND_X = 12.3,
   BOUND_Z = 4.4;
-const names =
-  "Nell Kit Finn Ida Silas Lark Maya Wes Iris Ada Joel Remy Bea Luca Cora Otto Inez Nico Tess Eli Cleo Jules Aya Leon June Theo Vera Milo Sia Bram Mika Esme Hugo Rae Bo Nina Sam Zora Max Eve".split(
-    " ",
-  );
 
 function random(seed) {
   let n = seed >>> 0;
@@ -52,7 +49,7 @@ export function makeWorld(seed) {
     );
   const tickets = shuffle(order.slice(), rand);
   const starts = shuffle(order.slice(), rand);
-  const guests = names.map((name, id) => {
+  const guests = people.map(({name,index:id}) => {
     const position = starts[id],
       ticket = tickets[id];
     return {

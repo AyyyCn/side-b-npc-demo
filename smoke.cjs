@@ -27,6 +27,9 @@ async function check() {
       page.evaluate(() => JSON.parse(window.render_game_to_text()));
     const url = process.env.DEMO_URL || "http://127.0.0.1:19447/";
     await page.goto(url);
+    await page.locator("#open-social").waitFor();
+    assert.deepEqual((await state()).systems, ["social", "crew", "perception"]);
+    await page.locator("#open-social").click();
     await page.waitForFunction(
       () =>
         window.render_game_to_text && JSON.parse(render_game_to_text()).ready,
@@ -39,6 +42,8 @@ async function check() {
     assert.equal(first.alternative.counts.east, 15);
     assert.match(await page.locator("#answer-a").textContent(), /Esme/);
     assert.match(await page.locator("#answer-b").textContent(), /programme/);
+    const selectedCrowd = await page.locator("#to-crew").getAttribute("href");
+    assert.match(selectedCrowd, /seed=746&hold=31&run=altered/);
     await page.locator("#evidence summary").click();
     await page
       .getByRole("button", { name: "Replay Esme to Finn at 7.5 s" })
@@ -141,6 +146,73 @@ async function check() {
     assert.deepEqual(errors, []);
     console.log(
       "Verified both invitation paths, interviews, replay, camera, and sound.",
+    );
+    const waitLab = (mode) =>
+      page.waitForFunction((m) => {
+        if (!window.render_game_to_text) return false;
+        const s = JSON.parse(render_game_to_text());
+        return s.mode === m && s.ready;
+      }, mode);
+    await page.goto(new URL(selectedCrowd, url).href);
+    await waitLab("crew");
+    assert.equal((await state()).audience, 15);
+    assert.ok(!(await state()).jobs.includes("zone"));
+    await page.locator("#attendance").selectOption("original");
+    assert.equal((await state()).baseEnd, 215);
+    await page.locator("#apply").click();
+    const repair = await state();
+    assert.equal(repair.incident.t, 39);
+    assert.equal(repair.finish, 241);
+    assert.equal(repair.keptTeamsEnd, 329);
+    await page.locator("#finish").click();
+    assert.match(
+      await page.locator("#scene-caption").textContent(),
+      /complete/,
+    );
+    await page.locator("#restore").click();
+    await page.locator("#who").selectOption("0");
+    await page.locator("#duration").selectOption("200");
+    await page.locator("#apply").click();
+    assert.equal((await state()).incident.until, 239);
+    assert.equal((await state()).incident.absent, 0);
+    await page.locator("#restore").click();
+    assert.equal((await state()).incident, null);
+    await page.locator("#scrub").fill("0");
+    assert.equal((await state()).tick, 0);
+    await page
+      .getByRole("navigation", { name: "NPC systems" })
+      .getByText("Perception & search")
+      .click();
+    await waitLab("perception");
+    assert.deepEqual((await state()).visible, [true, false, false]);
+    await page.locator("#search-start").click();
+    await page.locator("#finish").click();
+    assert.deepEqual((await state()).inspected, ["Catalogue", "Dispatch"]);
+    await page.locator("#compare-screen").click();
+    await page.locator("#finish").click();
+    assert.deepEqual((await state()).inspected, ["Dispatch"]);
+    await page.locator("#send-record").click();
+    await waitLab("crew");
+    assert.equal((await state()).recordReady, 96);
+    assert.ok(
+      (await state()).assignments.find((a) => a.id === "sound").start >= 96,
+    );
+    await page.locator("#to-archive").click();
+    await waitLab("perception");
+    await page.locator("#bin").selectOption("intake");
+    await page.locator("#screen").selectOption("closed");
+    assert.equal((await state()).seen, true);
+    await page.locator("#finish").click();
+    assert.deepEqual((await state()).inspected, ["Intake"]);
+    await page
+      .getByRole("navigation", { name: "NPC systems" })
+      .getByText("NPC Systems", { exact: true })
+      .click();
+    await waitLab("home");
+    assert.equal((await state()).mode, "home");
+    assert.deepEqual(errors, []);
+    console.log(
+      "Verified all three systems, crowd-to-crew handoff, alternative assignments, occlusion, search evidence and return navigation.",
     );
   } finally {
     await browser.close();

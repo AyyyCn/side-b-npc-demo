@@ -1,25 +1,37 @@
-# Side B
+# Side B · NPC Systems
 
-Stop one messenger for four seconds and see who ends up in the wrong hall. Side B runs two copies of the same 40-person crowd. Each guest walks to the venue they personally believe is correct. A second copy of the simulation lets you interrupt any guest and inspect the consequences.
+Three playable NPC systems share a music venue. Guests pass on a last-minute venue change, a stage crew recovers from an interruption, and an archivist searches for a record she may never have seen being filed.
 
-![Two runs from the same checkpoint. All 40 guests reach East Hall in the original run. When Esme is held, 15 arrive.](media/crowd-slide.png)
+[Play the suite](https://ayyycn.github.io/side-b-npc-demo/) · [Download the pitch film](https://github.com/AyyyCn/side-b-npc-demo/releases/download/v3.0.0/npc-systems.mp4) · [Download the 16:9 slide](https://github.com/AyyyCn/side-b-npc-demo/releases/download/v3.0.0/npc-systems.png) · [Download the offline demo](https://github.com/AyyyCn/side-b-npc-demo/releases/download/v3.0.0/npc-systems.html)
 
-[Download the 23-second pitch clip](https://github.com/AyyyCn/side-b-npc-demo/releases/download/v2.0.0/crowd-fork.mp4) · [Download the 16:9 slide](https://github.com/AyyyCn/side-b-npc-demo/releases/download/v2.0.0/crowd-slide.png) · [Download the standalone demo](https://github.com/AyyyCn/side-b-npc-demo/releases/download/v2.0.0/side-b.html)
+![Three in-engine captures showing social memory, crew coordination, and perception-driven search.](media/npc-systems.png)
 
-The MP4 and PNG are 1920 × 1080 captures from the interactive application. The HTML runs offline in a WebGL 2 browser.
+| System | Try this | Result in the featured scenario |
+| --- | --- | --- |
+| [Social memory](https://ayyycn.github.io/side-b-npc-demo/?crowd) | Hold Esme for four seconds. Ask Finn how he heard about the show in each replay. | East Hall receives 40 guests in the original and 15 after the hold. |
+| [Crew coordination](https://ayyycn.github.io/side-b-npc-demo/?crew) | Radio Wes while he and Esme are halfway through moving the PA rack. | Keeping each original team finishes at 32.9 s. Nina relieves Wes and the replanned crew finishes at 24.1 s, ahead of the 26.0 s door time. |
+| [Perception and search](https://ayyycn.github.io/side-b-npc-demo/?perception) | File the sleeve in Dispatch. Replay with the screen across the archive, then fold it aside. | With the screen across, Ida checks Catalogue, finds it empty and searches Dispatch. With a clear view she goes straight to Dispatch. |
 
-## Try the interruption
+The listening room and the forty-person crowd replay are two views of social memory. The six-person room lets you start an invitation, then question individual guests about its source. [Play the listening room](https://ayyycn.github.io/side-b-npc-demo/?room)
 
-1. Open the demo and press **Replay**. The programme says West Hall. At 2.8 seconds the DJ radios one guest with a change to East Hall.
-2. At the 6.7-second checkpoint the runs split. In crowd 746, Lark has just told Esme about East Hall. In the original run Esme tells Finn at 7.5 seconds. The four-second hold prevents that exchange in the second run.
-3. Select **Outcome**. At 40 seconds the attendance at East Hall is 40 in the original and 15 in the second run. Inspect Finn, open **Trace the evidence**, and select a timestamp to replay that moment.
-4. Choose another guest under **Interrupt**, or select **New crowd**. The browser computes all 40 possible interruptions for each crowd. **Largest effect** selects the guest whose hold changed the most final hall assignments.
+## Connect the experiments
 
-Crowd 746 was selected to make the effect visible in a pitch. Placement, radio recipient, social preferences, walking speeds, and departure times depend on the seed. A hold can reduce attendance, increase it, or leave it unchanged. In crowd 722, holding Inez increases attendance at East Hall from 25 to 40.
+- In the crowd replay, choose **Plan for this crowd**. The stage planner reruns that seed and interruption to obtain the East Hall attendance. The 15-person work order needs one speaker zone. A second zone is required at 24 guests.
+- In the archive, choose **Outcome**, then **Send the sleeve to sound check**. The audio check must wait until Ida actually finds the reference sleeve. For the 40-person setup, an unobstructed deposit makes the original crew ready at 22.7 s. The obstructed deposit moves that to 25.0 s. The stage view links back to both source experiments.
 
-## Run from source
+## How it works
 
-Use Node.js 20 or newer.
+**Social memory.** The crowd advances in 100 ms steps. A spatial grid finds nearby guests. Knowledge travels through completed, unobstructed exchanges and each guest walks toward the hall they believe is correct. A worker restores the complete world at 6.7 s, tries each of 40 possible four-second holds, and ranks the resulting hall changes. Select a guest or replay a receipt to inspect exactly what they knew at any frame. Crowd 746 is the featured example. In crowd 722, interrupting Inez increases East Hall attendance from 25 to 40. [Simulation](comparison/simulation.js) · [Counterfactual worker](comparison/worker.js)
+
+**Crew coordination.** A branch-and-bound scheduler searches eligible assignments and job orderings for the earliest opening cue on this small work order. It accounts for skills, distinct partners, travel to the right rack handle or station, external release times and prerequisite jobs. At a radio call the case stays where it is. Unaffected jobs continue, finished work is retained and the solver restarts from the crew’s live positions. The fixed-team comparison runs the same solver with the original team for each job. The default scenario has four crew members and six jobs. [Planner](crew/planner.js) · [Jobs and skills](crew/scenario.js)
+
+**Perception and search.** Ida’s filing observation uses her field of view, range and the footprint of the physical screen. A missed deposit eliminates only the bins she could see. Search uses posterior probabilities from 50 sample filings and a finite-horizon policy that compares the expected walking and inspection time for each visit order. A* supplies traversable paths around the partition. Each inspection produces new evidence. The policy has access to the observations and geometry. The hidden bin is held by the world simulation. [Observation model and search](perception/search.js)
+
+The demo uses skinned human characters and animated 3D environments. Paired crowds share baked skeleton animations through a GPU texture. Close-up crew and archive scenes use the original character rigs with two-bone hand placement. The pitch film uses edited gameplay, and the overview uses frames captured from the three scenes. [Crowd rendering](comparison/cast.js) · [Close-up rendering](npc/studio.js)
+
+## Run locally
+
+Use Node.js 20 or newer and a WebGL 2 browser.
 
 ```sh
 npm ci
@@ -27,45 +39,28 @@ npm run build
 npm start
 ```
 
-- [Open the interactive comparison](http://127.0.0.1:19447/).
-- [Open the guided pitch capture](http://127.0.0.1:19447/?pitch) or [open the still used for the slide](http://127.0.0.1:19447/?slide).
-- [Try crowd 722](http://127.0.0.1:19447/?seed=722). The `seed` query parameter accepts an unsigned 32-bit integer.
-- [Play the original six-person listening room](http://127.0.0.1:19447/?room) or [watch its guided cut](http://127.0.0.1:19447/?screening).
+Open the [local suite](http://127.0.0.1:19447/). The build also creates a self-contained `play.html` that opens directly from disk. Query routes include `?home`, `?crowd`, `?room`, `?crew` and `?perception`. The overview slide is at `?deck`. The original crowd and listening-room pitch cuts remain available at `?pitch` and `?screening`.
 
-## What the simulation does
+The hosted site uses a split build so opening the gallery only loads the suite logic and previews. Run `npm run build:site` to produce the static `site/` directory.
 
-**Local knowledge.** The simulation advances in fixed 100 ms steps. Each guest reads the original programme. A newer venue reaches a guest through the radio or a completed face-to-face exchange. A spatial grid finds potential contacts. A speaker chooses someone using distance, familiarity, availability and their history of conversations. The two people must remain in range and have an unobstructed line through the floor plan. Each guest navigates toward their own destination, uses doorways and steers around neighbours. [Simulation and floor plan](comparison/simulation.js)
-
-**Counterfactual replay.** A Web Worker saves the full state, including conversations in progress, at the fork. It restores that checkpoint for each possible four-second hold and ranks the outcomes by the number of guests physically in opposite halls at the end. Guests still in the foyer are excluded from that count. Counts over the two 3D views show arrivals at the current playhead. Rewinding also rewinds the guest interviews. [Branch analysis](comparison/worker.js)
-
-**Evidence.** Every accepted venue change records its tick, speaker, listener, positions and the exact parent message. Following those links reconstructs what one guest heard. A missing conversation can change later encounters between other guests, so the full effect is measured by rerunning the world. [Evidence and replay controls](comparison/app.js)
-
-**Rendering.** Both venues use the same camera. Four low-detail character rigs have their walk and idle clips sampled into bone-matrix textures. Per-instance animation rows and transforms render the two crowds independently, including when seeking backwards. [Instanced animation](comparison/cast.js) · [Paired renderer](comparison/view.js)
-
-## Ask a guest in both runs
-
-The evidence trail works offline. With a local llama.cpp server, **Trace the evidence** also accepts a typed question. The model interprets the question. The demo answers it separately in each run using only the selected guest’s evidence or position at the chosen time. The original listening room supports typed questions as well. The local configuration was tested with Qwen2.5-1.5B-Instruct Q4_K_M.
+The three simulations run deterministically offline. An optional local llama.cpp server interprets free-text questions about a guest. The simulation supplies each answer from that person’s own evidence. The tested local model is Qwen2.5-1.5B-Instruct Q4_K_M.
 
 ```sh
 llama-server -m /path/to/model.gguf --host 127.0.0.1 --port 19442 -c 1024
 ```
 
-Run the following in a second terminal from the built project.
+With the model running, start the application server with `MODEL_URL=http://127.0.0.1:19442 npm start`.
 
-```sh
-MODEL_URL=http://127.0.0.1:19442 npm start
-```
+## Verify
 
-## Verify the demo
-
-With the demo server running, install Playwright Chromium and run the tests. Set `BROWSER_CHANNEL=chrome` to use an installed desktop Chrome.
+With the built application running, install Playwright Chromium and run the suite. Set `BROWSER_CHANNEL=chrome` to use an installed desktop Chrome or `DEMO_URL` to test another deployment.
 
 ```sh
 npx playwright install chromium
 npm test
 ```
 
-The simulation tests check bit-for-bit replay, identical pre-interruption states, the physical conditions of every transmission, and final attendance against the recorded positions. The browser check also exercises the timeline, guest inspection, alternative interventions, different seeds and both routes through the original listening room.
+The tests cover identical pre-interruption histories, causal receipts, both social-memory views, schedule feasibility and handoffs, physical continuity, a hidden-location information leak regression, search probabilities and unobstructed walking paths. The browser check exercises all three through their normal controls and passes the crowd and archive results into the stage plan.
 
 ## Art and software credits
 

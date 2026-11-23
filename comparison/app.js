@@ -125,6 +125,8 @@ function accept(data) {
     );
   }
   result = data.result;
+  $("to-crew").href =
+    "?crew&seed=" + seed + "&hold=" + result.hold + "&run=altered";
   witness = chooseWitness();
   clock = pitch ? 0 : END;
   pitchTime = 0;
@@ -225,14 +227,8 @@ $("question-form").onsubmit = async (event) => {
       );
   }
 };
-if (!pitch && !slide && /^https?:$/.test(location.protocol)) {
-  fetch("/capabilities")
-    .then((r) => (r.ok ? r.json() : {}))
-    .then((c) => {
-      $("interview").hidden = !c.freeText;
-    })
-    .catch(() => {});
-}
+$("interview").hidden =
+  pitch || slide || !document.documentElement.hasAttribute("data-interviews");
 function populateTrail(id, path) {
   $(id).replaceChildren(
     ...path.map((e) => {
@@ -514,7 +510,14 @@ window.render_game_to_text = () => {
     alternative: describeTrace(result),
   });
 };
-calculate();
+const requestedHold = query.get("hold");
+calculate(
+  requestedHold !== null &&
+    /^\d{1,2}$/.test(requestedHold) &&
+    Number(requestedHold) < COUNT
+    ? Number(requestedHold)
+    : undefined,
+);
 createView(canvas)
   .then((v) => {
     view = v;

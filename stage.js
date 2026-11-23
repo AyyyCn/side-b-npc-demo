@@ -7,30 +7,12 @@ import city from "./art/night.webp";
 import { venueMaterials } from "./material-library.js";
 import { buildVenue } from "./venue.js";
 import { createCast, updateCast } from "./cast.js";
-import harper from "./art/harper.glb";
-import maya from "./art/maya.glb";
-import sam from "./art/sam.glb";
-import jordan from "./art/jordan.glb";
+import { loadModels, characterModels } from "./npc/rigs.js";
 import chair from "./art/lounge-chair.glb";
 import stool from "./art/stool.glb";
 import plant from "./art/plant.glb";
 import bottles from "./art/bottles.glb";
 
-async function models(loader, files) {
-  const entries = await Promise.all(
-    Object.entries(files).map(async ([key, bytes]) => [
-      key,
-      await loader.parseAsync(
-        bytes.buffer.slice(
-          bytes.byteOffset,
-          bytes.byteOffset + bytes.byteLength,
-        ),
-        "",
-      ),
-    ]),
-  );
-  return Object.fromEntries(entries);
-}
 function lightVenue(scene, renderer) {
   scene.background = new T.Color("#121922");
   scene.fog = new T.FogExp2("#1a2226", 0.024);
@@ -93,8 +75,8 @@ export async function createStage(canvas, hit) {
   lightVenue(scene, renderer);
   const loader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
   const [rigs, assets, materials, night] = await Promise.all([
-    models(loader, { harper, maya, sam, jordan }),
-    models(loader, { chair, stool, plant, bottles }),
+    loadModels(loader, characterModels),
+    loadModels(loader, { chair, stool, plant, bottles }),
     venueMaterials(),
     new T.TextureLoader().loadAsync(city),
   ]);

@@ -38,7 +38,7 @@ function aimSegment(bone, child, point, weight) {
   bone.updateWorldMatrix(false, true);
 }
 // Two-bone reach, layered over the native clips. All distances are in character-local metres.
-function reach(a, side, x, y, z, weight) {
+export function reach(a, side, x, y, z, weight) {
   if (weight < 0.005) return;
   const [upper, lower, wrist] = a.arms[side],
     sign = side === "l" ? 1 : -1;
@@ -153,9 +153,9 @@ function styleActor(a, id) {
     );
   }
 }
-export function createCast(scene, rigs) {
+export function createCast(scene, rigs, castProfiles = profiles) {
   const actors = new Map();
-  for (const [id, profile] of Object.entries(profiles)) {
+  for (const [id, profile] of Object.entries(castProfiles)) {
     const ref = rigs[profile.rig],
       model = clone(ref.scene),
       root = new T.Group();

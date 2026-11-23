@@ -1,7 +1,8 @@
+import {byKey} from "./npc/people.js";
 const cast = [
   {
     id: "nell",
-    name: "Nell",
+    name: byKey.nell.name,
     role: "Bartender",
     x: -3.49,
     z: -2.4,
@@ -10,7 +11,7 @@ const cast = [
   },
   {
     id: "kit",
-    name: "Kit",
+    name: byKey.kit.name,
     role: "Photographer",
     x: -2.25,
     z: -1.32,
@@ -19,7 +20,7 @@ const cast = [
   },
   {
     id: "finn",
-    name: "Finn",
+    name: byKey.finn.name,
     role: "Courier",
     x: -0.39,
     z: 0.02,
@@ -28,7 +29,7 @@ const cast = [
   },
   {
     id: "ida",
-    name: "Ida",
+    name: byKey.ida.name,
     role: "Architect",
     x: 0.86,
     z: 1.45,
@@ -37,7 +38,7 @@ const cast = [
   },
   {
     id: "silas",
-    name: "Silas",
+    name: byKey.silas.name,
     role: "Regular",
     x: -5.06,
     z: 1.71,
@@ -46,7 +47,7 @@ const cast = [
   },
   {
     id: "lark",
-    name: "Lark",
+    name: byKey.lark.name,
     role: "DJ",
     x: 5.33,
     z: -1.17,

@@ -1,0 +1,275 @@
+<style>
+  * {
+    box-sizing: border-box;
+  }
+  body {
+    margin: 0;
+    background: #f1f0e8;
+    color: #202d26;
+    font-family: Inter, "Helvetica Neue", Arial, sans-serif;
+  }
+  a {
+    color: inherit;
+  }
+  .home {
+    max-width: 1940px;
+    margin: auto;
+    padding: clamp(32px, 4.7vw, 82px) clamp(21px, 4.35vw, 85px) 34px;
+  }
+  .home-head {
+    display: grid;
+    grid-template-columns: 1.13fr 1fr;
+    gap: 5.7%;
+    align-items: end;
+    padding-bottom: clamp(25px, 3vw, 52px);
+    border-bottom: 1px solid #9ca799;
+  }
+  .home h1 {
+    font-size: clamp(58px, 8.3vw, 155px);
+    font-weight: 570;
+    line-height: 0.86;
+    letter-spacing: -0.078em;
+    margin: 0;
+  }
+  .home-head p {
+    margin: 0;
+    max-width: 27em;
+    font-size: clamp(19px, 2.02vw, 38px);
+    line-height: 1.17;
+    letter-spacing: -0.034em;
+    text-wrap: balance;
+  }
+  .gallery {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: clamp(17px, 2vw, 38px);
+    margin-top: clamp(23px, 2.8vw, 49px);
+  }
+  .card {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+  .card > a {
+    display: block;
+    text-decoration: none;
+  }
+  .card a:focus-visible,
+  .home-foot a:focus-visible {
+    outline: 3px solid #3b7e5d;
+    outline-offset: 4px;
+  }
+  .card figure {
+    margin: 0;
+    aspect-ratio: 1.63;
+    overflow: hidden;
+    background: #37423a;
+  }
+  .card img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .card h2 {
+    font-size: clamp(23px, 2.35vw, 46px);
+    line-height: 1.05;
+    letter-spacing: -0.058em;
+    margin: clamp(15px, 1.5vw, 28px) 0 9px;
+    font-weight: 580;
+  }
+  .card > a:hover h2 {
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 4px;
+  }
+  .card p {
+    font-size: clamp(15px, 1.18vw, 23px);
+    line-height: 1.41;
+    color: #505d53;
+    max-width: 35em;
+    margin: 0 0 1.4em;
+  }
+  .card .measure {
+    margin-top: auto;
+    padding-top: clamp(10px, 1.15vw, 22px);
+    border-top: 1px solid #b0b9aa;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    column-gap: 10px;
+    row-gap: 3px;
+  }
+  .measure strong {
+    font-size: clamp(23px, 2.36vw, 45px);
+    line-height: 1;
+    letter-spacing: -0.065em;
+    font-variant-numeric: tabular-nums;
+    font-weight: 550;
+  }
+  .measure span {
+    font-size: clamp(13px, 1.03vw, 19px);
+    line-height: 1.25;
+    color: #4c5950;
+  }
+  .home-foot {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    margin-top: clamp(28px, 3.3vw, 66px);
+    border-top: 1px solid #aab5a6;
+    padding-top: 13px;
+    font-size: 14px;
+    color: #506054;
+  }
+  .home-foot a {
+    text-underline-offset: 4px;
+  }
+  .deck-brand {
+    display: none;
+  }
+  .deck .home {
+    max-width: initial;
+    height: 100svh;
+    padding: 5.2vh 4.6vw;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+  .deck .deck-brand {
+    display: block;
+    font-weight: 720;
+    letter-spacing: -0.065em;
+    font-size: 2.25vw;
+    line-height: 1;
+    margin-bottom: 4vh;
+  }
+  .deck .home-head {
+    padding-bottom: 3.6vh;
+  }
+  .deck .home h1 {
+    font-size: 7.4vw;
+  }
+  .deck .home-head p {
+    font-size: 1.8vw;
+  }
+  .deck .gallery {
+    margin-top: 3.4vh;
+    gap: 1.8vw;
+  }
+  .deck .card figure {
+    aspect-ratio: 1.79;
+  }
+  .deck .card h2 {
+    font-size: 2.6vw;
+    margin: 2.4vh 0 0.8vh;
+  }
+  .deck .card p {
+    font-size: 1.23vw;
+    margin: 0 0 2vh;
+  }
+  .deck .measure {
+    padding-top: 1.8vh;
+  }
+  .deck .measure strong {
+    font-size: 2.45vw;
+  }
+  .deck .measure span {
+    font-size: 1.08vw;
+  }
+  .deck .home-foot {
+    display: none;
+  }
+  @media (max-width: 850px) {
+    .home-head {
+      grid-template-columns: 1fr;
+      gap: 17px;
+    }
+    .home-head p {
+      max-width: 37em;
+    }
+    .gallery {
+      gap: 17px;
+    }
+    .card h2 {
+      font-size: 24px;
+    }
+  }
+  @media (max-width: 680px) {
+    .home {
+      padding-top: 34px;
+    }
+    .gallery {
+      grid-template-columns: 1fr;
+      gap: 30px;
+    }
+    .card figure {
+      aspect-ratio: 1.94;
+    }
+    .card .measure {
+      margin-top: 0;
+    }
+    .card p {
+      margin-bottom: 13px;
+    }
+    .home h1 {
+      font-size: clamp(51px, 12vw, 75px);
+    }
+    .home-head p {
+      font-size: 20px;
+    }
+    .home-foot {
+      align-items: flex-start;
+      flex-direction: column;
+    }
+  }
+  @media (max-width: 850px) {
+    .deck .home {
+      height: auto;
+      min-height: 100svh;
+      justify-content: flex-start;
+      padding: 25px 20px;
+    }
+    .deck .deck-brand {
+      font-size: 23px;
+    }
+    .deck .home h1 {
+      font-size: clamp(46px, 10vw, 76px);
+    }
+    .deck .home-head p {
+      font-size: 20px;
+    }
+    .deck .card h2 {
+      font-size: 25px;
+    }
+    .deck .card p {
+      font-size: 15px;
+    }
+    .deck .measure strong {
+      font-size: 25px;
+    }
+    .deck .measure span {
+      font-size: 14px;
+    }
+  }
+</style>
+<main class="home">
+  <div class="deck-brand">Side B</div>
+  <header class="home-head">
+    <h1>NPC Systems</h1>
+    <p>
+      How characters share information, coordinate work and search with
+      incomplete knowledge.
+    </p>
+  </header>
+  <section
+    class="gallery"
+    id="gallery"
+    aria-label="Three playable NPC systems"
+  ></section>
+  <footer class="home-foot">
+    <span>Built and captured in the Side B simulation.</span
+    ><a href="?deck">Open pitch slide ↗</a>
+  </footer>
+</main>

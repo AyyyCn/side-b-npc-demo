@@ -1,0 +1,507 @@
+<style>
+  * {
+    box-sizing: border-box;
+  }
+  body {
+    margin: 0;
+    background: #f1f0e8;
+    color: #202c26;
+    font-family: Inter, "Helvetica Neue", Arial, sans-serif;
+  }
+  button,
+  select,
+  input {
+    font: inherit;
+    color: inherit;
+  }
+  button,
+  a,
+  select,
+  input {
+    touch-action: manipulation;
+  }
+  button {
+    cursor: pointer;
+  }
+  button:disabled {
+    cursor: default;
+    opacity: 0.5;
+  }
+  [hidden] {
+    display: none !important;
+  }
+  :focus-visible {
+    outline: 3px solid #267b69;
+    outline-offset: 3px;
+  }
+  .lab {
+    max-width: 1950px;
+    margin: 0 auto;
+    padding: clamp(23px, 3vw, 53px) clamp(18px, 3.6vw, 70px) 32px;
+  }
+  .lab-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 30px;
+    margin: 0 0 clamp(20px, 2.4vw, 40px);
+  }
+  .lab-head h1 {
+    font-size: clamp(36px, 4.65vw, 88px);
+    letter-spacing: -0.072em;
+    line-height: 0.98;
+    font-weight: 600;
+    margin: 0;
+  }
+  .lab-head p {
+    max-width: 34em;
+    font-size: clamp(15px, 1.3vw, 25px);
+    line-height: 1.37;
+    color: #4f5a51;
+    margin: 11px 0 0;
+  }
+  .lab-head a,
+  .lab-side a {
+    color: #355a49;
+    text-underline-offset: 3px;
+    font-size: 0.91rem;
+  }
+  .lab-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 2.2fr) minmax(270px, 1fr);
+    gap: clamp(23px, 2.8vw, 55px);
+    align-items: start;
+  }
+  .lab-view {
+    position: relative;
+    overflow: hidden;
+    aspect-ratio: 1.9;
+    background: #343b36;
+  }
+  .lab-view canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+  .loading {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-content: center;
+    background: #242b27;
+    color: #fff;
+  }
+  .live-caption {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    pointer-events: none;
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 16px;
+    background: linear-gradient(transparent, #171b19df);
+    padding: 30px 3% 2%;
+    color: #faf6e9;
+    font-size: clamp(13px, 1.05vw, 21px);
+  }
+  .live-caption strong {
+    font-weight: 550;
+  }
+  .live-caption time,
+  .timescale {
+    font-variant-numeric: tabular-nums;
+  }
+  .transport-lab {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 0;
+    border-bottom: 1px solid #c0c4b7;
+  }
+  .transport-lab input {
+    min-width: 40px;
+    flex: 1;
+    accent-color: #42654e;
+  }
+  .lab button {
+    background: transparent;
+    border: 1px solid #a6ac9e;
+    border-radius: 4px;
+    padding: 8px 13px;
+    font-size: 14px;
+    line-height: 1.2;
+  }
+  .lab button:hover:enabled {
+    background: #e2e6d9;
+  }
+  .lab button.main-action {
+    background: #244735;
+    color: #fff;
+    border-color: #244735;
+    font-weight: 580;
+  }
+  .lab button.main-action:hover:enabled {
+    background: #355740;
+  }
+  .lab-side {
+    border-top: 2px solid #33473a;
+    padding-top: clamp(13px, 1.5vw, 26px);
+  }
+  .lab-side h2 {
+    font-size: clamp(23px, 2vw, 40px);
+    line-height: 1.02;
+    letter-spacing: -0.054em;
+    font-weight: 570;
+    margin: 0 0 14px;
+  }
+  .lab-side h3,
+  .below h3 {
+    font-size: clamp(16px, 1.12vw, 23px);
+    margin: 0 0 12px;
+    letter-spacing: -0.025em;
+  }
+  .fields {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 10px;
+  }
+  .fields label {
+    font-size: 13px;
+    display: grid;
+    gap: 5px;
+    color: #526055;
+  }
+  .fields select {
+    background: #faf9f1;
+    border: 1px solid #a6ad9e;
+    padding: 7px 6px;
+    border-radius: 3px;
+    font-size: 14px;
+  }
+  .lab-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 7px;
+    margin: 13px 0;
+  }
+  .result {
+    margin: 17px 0;
+    padding: 15px 0;
+    border-block: 1px solid #bcc2b4;
+  }
+  .result .metrics {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    column-gap: 12px;
+  }
+  .metric strong {
+    display: block;
+    letter-spacing: -0.055em;
+    font-size: clamp(24px, 2.48vw, 49px);
+    font-weight: 560;
+    line-height: 1.1;
+    font-variant-numeric: tabular-nums;
+  }
+  .metric span,
+  .minor {
+    font-size: clamp(12px, 0.96vw, 17px);
+    color: #59655a;
+    line-height: 1.4;
+  }
+  .result p,
+  .notes {
+    font-size: clamp(14px, 1.09vw, 21px);
+    line-height: 1.43;
+    margin: 11px 0 0;
+  }
+  .below {
+    margin-top: 17px;
+  }
+  .below h3 {
+    margin-bottom: 8px;
+  }
+  .report-row {
+    display: grid;
+    grid-template-columns: 64px 1fr;
+    align-items: center;
+    gap: 9px;
+    padding: 4px 0;
+    font-size: 13px;
+  }
+  .report-row b {
+    font-weight: 560;
+  }
+  .work-track {
+    position: relative;
+    height: 18px;
+    background: #e2e3d9;
+    border-radius: 2px;
+  }
+  .work-track i,
+  .work-track em {
+    position: absolute;
+    height: 100%;
+    min-width: 2px;
+  }
+  .work-track i {
+    background: #7b9881;
+    border: 1px solid #f1f0e8;
+    border-radius: 2px;
+  }
+  .work-track .away {
+    background: repeating-linear-gradient(
+      115deg,
+      #b67e62,
+      #b67e62 3px,
+      #e2bba2 3px,
+      #e2bba2 6px
+    );
+  }
+  .work-track em {
+    border-left: 2px solid #202e25;
+    z-index: 1;
+    width: 0;
+  }
+  .prob {
+    display: grid;
+    grid-template-columns: 85px 1fr 39px;
+    align-items: center;
+    gap: 9px;
+    margin: 10px 0;
+    font-size: 14px;
+  }
+  .prob i {
+    background: #e0e2d7;
+    height: 5px;
+  }
+  .prob b {
+    display: block;
+    background: #63836d;
+    height: 100%;
+  }
+  .prob span:last-child {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+  .proof-note {
+    color: #5b655c;
+    margin: 7px 0 0;
+    font-size: 13px;
+    line-height: 1.5;
+  }
+  .evidence-list {
+    list-style: none;
+    padding: 0;
+    margin: 6px 0;
+  }
+  .evidence-list li {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    border-top: 1px solid #d6d8cd;
+    padding: 7px 0;
+    line-height: 1.34;
+    font-size: 14px;
+  }
+  .evidence-list time {
+    white-space: nowrap;
+    color: #52735f;
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+  }
+  .film .lab {
+    max-width: none;
+    padding: 4.5vh 4vw;
+  }
+  .film .lab-head {
+    margin-bottom: 4vh;
+  }
+  .film .lab-view {
+    aspect-ratio: 1.81;
+  }
+  .film .lab-head h1 {
+    font-size: 5.4vw;
+  }
+  .film .lab-head p {
+    font-size: 1.5vw;
+    max-width: 62em;
+  }
+  .film .lab-grid {
+    grid-template-columns: 2.2fr 1fr;
+    gap: 2.65vw;
+  }
+  .film .interactive {
+    display: none;
+  }
+  .film .below,
+  .film .lab-side {
+    margin-top: 0;
+  }
+  .film .below {
+    margin-top: 2.1vh;
+  }
+  .film .result {
+    margin-top: 0;
+  }
+  .film .report-row,
+  .film .prob,
+  .film .evidence-list li {
+    font-size: 1.1vw;
+  }
+  .film .work-track {
+    height: 1.45vw;
+  }
+  .film .report-row {
+    grid-template-columns: 4.4vw 1fr;
+  }
+  .film .prob {
+    grid-template-columns: 5.6vw 1fr 3.2vw;
+  }
+  .film .evidence-list time,
+  .film .proof-note {
+    font-size: 0.93vw;
+  }
+  @media (max-width: 850px) {
+    .lab-grid {
+      grid-template-columns: 1fr;
+    }
+    .lab-side {
+      max-width: 100%;
+    }
+    .lab-head {
+      align-items: flex-start;
+    }
+    .lab-head > a {
+      white-space: nowrap;
+    }
+    .lab-view {
+      aspect-ratio: 1.7;
+    }
+    .lab-side .result {
+      max-width: 650px;
+    }
+  }
+  @media (max-width: 550px) {
+    .lab-head {
+      display: block;
+    }
+    .lab-head > a {
+      display: inline-block;
+      margin-top: 9px;
+    }
+    .lab {
+      padding-top: 23px;
+    }
+    .lab-view {
+      aspect-ratio: 1.5;
+    }
+    .lab-grid {
+      gap: 18px;
+    }
+    .live-caption {
+      font-size: 12px;
+      padding: 25px 9px 8px;
+    }
+    .transport-lab {
+      gap: 7px;
+    }
+    .lab button {
+      font-size: 13px;
+      padding: 8px;
+    }
+    .fields select {
+      max-width: 100%;
+    }
+  }
+  .film .lab {
+    padding-top: 3.8vh;
+  }
+  .film .lab-head {
+    margin-bottom: 2.8vh;
+  }
+  .film .lab-head h1 {
+    font-size: 4.6vw;
+  }
+  .film .lab-head p {
+    font-size: 1.35vw;
+  }
+  .film .lab-view {
+    aspect-ratio: 2.05;
+  }
+  .film .report-row {
+    padding: 2px 0;
+  }
+  .film .below {
+    margin-top: 1.5vh;
+  }
+  @media (max-width: 850px) {
+    .film .lab-grid {
+      grid-template-columns: 1fr;
+    }
+    .film .lab-head h1 {
+      font-size: clamp(34px, 6vw, 52px);
+    }
+    .film .lab-head p {
+      font-size: 16px;
+    }
+    .film .prob,
+    .film .report-row,
+    .film .evidence-list li {
+      font-size: 14px;
+    }
+    .film .report-row {
+      grid-template-columns: 64px 1fr;
+    }
+    .film .prob {
+      grid-template-columns: 85px 1fr 39px;
+    }
+    .film .evidence-list time,
+    .film .proof-note {
+      font-size: 13px;
+    }
+    .film .work-track {
+      height: 18px;
+    }
+  }
+</style>
+<main class="lab">
+  <header class="lab-head">
+    <div>
+      <h1 id="lab-title"></h1>
+      <p id="premise"></p>
+    </div>
+    <a id="related" class="interactive" hidden></a>
+  </header>
+  <div class="lab-grid">
+    <div>
+      <div class="lab-view">
+        <canvas id="world" aria-label="Live 3D simulation"></canvas>
+        <div class="live-caption">
+          <strong id="scene-caption"></strong><time id="time"></time>
+        </div>
+        <div class="loading" id="loading" role="status">Opening the venue…</div>
+      </div>
+      <div class="transport-lab interactive">
+        <button id="play">Play</button
+        ><input
+          type="range"
+          id="scrub"
+          min="0"
+          step="1"
+          aria-label="Simulation time"
+        /><button id="finish">Outcome</button>
+      </div>
+      <section class="below" id="under"></section>
+    </div>
+    <aside class="lab-side">
+      <h2 id="experiment"></h2>
+      <div class="fields interactive" id="fields"></div>
+      <div class="lab-actions interactive" id="actions"></div>
+      <div id="result" class="result"></div>
+      <div id="details"></div>
+    </aside>
+  </div>
+</main>
